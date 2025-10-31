@@ -72,6 +72,9 @@
       border-radius: 3px;
       font-family: inherit;
   }
+  .command-key strong {
+      color: var(--accent);
+  }
 
   @media(max-width:920px){main{grid-template-columns:1fr;}}
 </style>
@@ -80,7 +83,7 @@
 <div class="wrap">
   <header>
     <div>
-      <div class="neonTitle">Save the Net — v1.1 • Welcome Edition</div>
+      <div class="neonTitle">Save the Net — v1.2 • UI Tweak Edition</div>
       <h1>Inbox Panic at 09:13</h1>
       <div class="subtitle">A tiny text adventure — 80s neon, floppy nostalgia, & modern AI shenanigans</div>
     </div>
@@ -99,8 +102,8 @@
       <div class="terminal command-key" style="margin-top:0; margin-bottom: 12px;">
         <div style="font-size:13px;color:var(--muted)">Getting Started</div>
         <ul>
-          <li>New? Click the choices in the main window.</li>
-          <li>Try exploring your <code>desk</code> or the <code>shelf</code>.</li>
+          <li><strong>Click the choice buttons</strong> to play.</li>
+          <li>Try clicking "Look around your desk".</li>
           <li>Check your <code>Inventory</code> for clues.</li>
         </ul>
       </div>
@@ -112,17 +115,17 @@
 
       <div class="terminal">
         <div style="font-size:13px;color:var(--muted)">Terminal</div>
-        <input id="terminalInput" type="text" placeholder='Type code here (e.g. sudo_save_the_internet(); )' />
+        <input id="terminalInput" type="text" placeholder='Type FINAL code here' />
         <button id="runBtn" class="btn">RUN</button>
         <div id="termMsg" style="margin-top:6px;font-size:13px;color:var(--muted)"></div>
       </div>
 
       <div class="terminal command-key">
-        <div style="font-size:13px;color:var(--muted)">Command Key</div>
+        <div style="font-size:13px;color:var(--muted)">Game Hints</div>
         <ul>
-          <li>Try: <code>open</code>, <code>inspect</code>, <code>use</code>, <code>look</code></li>
-          <li>Hint: The final code is a function call.</li>
-          <li>e.g. <code>sudo_save_the_internet();</code></li>
+          <li>Look for keywords in the story and choices.</li>
+          <li>e.g. <code>open</code>, <code>inspect</code>, <code>desk</code>, <code>shelf</code></li>
+          <li>The Terminal is for the <strong>final code</strong> only.</li>
         </ul>
       </div>
 
@@ -362,7 +365,6 @@ const scenes = {
     ]
   },
 
-D:
   server:{
     text:[
       "The server room hums. Racks glow like a cathedral of LEDs. On a console is a tiny notepad: 'Patch Assembly Terminal. Enter final code to patch cascade.'",
@@ -433,7 +435,6 @@ const runBtn = document.getElementById('runBtn');
 const termMsg = document.getElementById('termMsg');
 
 
-/* --- NEW: handleChoice function to route player clicks --- */
 function handleChoice(action) {
   if (scenes[action]) {
     // It's a scene key, navigate
@@ -483,7 +484,6 @@ function showScene(key){
     const b = document.createElement('button');
     b.className = 'choice';
     b.innerText = ch.t;
-    /* --- FIX: Use the new handleChoice function --- */
     b.onclick = ()=> handleChoice(ch.a);
     choicesEl.appendChild(b);
   });
@@ -511,7 +511,6 @@ function updateInventoryUI(){
       <div style="font-size:12px;color:var(--muted)">${game.fragments[i.name] ? 'Fragment: ' + "<span class='frag'>"+escapeHtml(game.fragments[i.name])+"</span>" : ''}</div>
     </div>`;
     invEl.appendChild(div);
-D:
   });
 }
 
@@ -538,9 +537,16 @@ function runTerminal(){
     return;
   }
   
-  // If it's not the final code, it's a failure.
-  showScene('failure');
-  termMsg.innerText = "Patch failed. That's not the code.";
+  // If they are at the main terminal, show the "failure" scene
+  if (game.scene === 'terminal_scene') {
+      showScene('failure');
+      termMsg.innerText = "Patch failed. That's not the code.";
+  } else {
+      // If they are just randomly typing, guide them.
+      addLog("<div style='color:var(--neon)'>Hint: That terminal is only for entering the *final patch code*.</div>");
+      addLog("<div style='color:var(--muted)'>To explore (e.g., 'desk'), click the choice buttons.</div>");
+      termMsg.innerText = "Use buttons to explore.";
+  }
 }
 
 /* Utility functions */
