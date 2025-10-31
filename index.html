@@ -80,7 +80,7 @@
 <div class="wrap">
   <header>
     <div>
-      <div class="neonTitle">Save the Net — v1.0 • Bugfix Edition</div>
+      <div class="neonTitle">Save the Net — v1.1 • Welcome Edition</div>
       <h1>Inbox Panic at 09:13</h1>
       <div class="subtitle">A tiny text adventure — 80s neon, floppy nostalgia, & modern AI shenanigans</div>
     </div>
@@ -96,6 +96,15 @@
     </section>
 
     <aside class="side">
+      <div class="terminal command-key" style="margin-top:0; margin-bottom: 12px;">
+        <div style="font-size:13px;color:var(--muted)">Getting Started</div>
+        <ul>
+          <li>New? Click the choices in the main window.</li>
+          <li>Try exploring your <code>desk</code> or the <code>shelf</code>.</li>
+          <li>Check your <code>Inventory</code> for clues.</li>
+        </ul>
+      </div>
+
       <h3 style="margin:0;color:var(--accent)">Inventory</h3>
       <div id="inventory" class="inventory" style="margin-top:8px">
         <div class="item"><div class="icon">—</div><div style="flex:1">No tools yet</div></div>
@@ -353,6 +362,7 @@ const scenes = {
     ]
   },
 
+D:
   server:{
     text:[
       "The server room hums. Racks glow like a cathedral of LEDs. On a console is a tiny notepad: 'Patch Assembly Terminal. Enter final code to patch cascade.'",
@@ -501,6 +511,7 @@ function updateInventoryUI(){
       <div style="font-size:12px;color:var(--muted)">${game.fragments[i.name] ? 'Fragment: ' + "<span class='frag'>"+escapeHtml(game.fragments[i.name])+"</span>" : ''}</div>
     </div>`;
     invEl.appendChild(div);
+D:
   });
 }
 
