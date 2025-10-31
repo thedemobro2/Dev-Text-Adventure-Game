@@ -62,122 +62,19 @@
     <strong>go [direction]</strong> – move to another area (north, south, east, west)<br>
     <strong>use [item]</strong> – use an item<br>
     <strong>inventory</strong> – check what you have<br>
-    <strong>help</strong> – get hints<br></p>
+    <strong>help</strong> – get hints</p>
   </div>
 </div>
 
 <script>
-const output = document.getElementById('output');
-const input = document.getElementById('input');
+document.addEventListener("DOMContentLoaded", () => {
+  const output = document.getElementById('output');
+  const input = document.getElementById('input');
 
-let inventory = [];
-let location = 'office';
-let gameOver = false;
+  let inventory = [];
+  let location = 'office';
+  let gameOver = false;
 
-const locations = {
-  office: {
-    desc: "You're in your dimly lit office. Neon lights flicker outside the window. Your computer hums softly. A new email notification pops up — subject: 'URGENT: Save the Internet!'. There’s a door to the west.",
-    items: ['email'],
-    exits: { west: 'hallway' }
-  },
-  hallway: {
-    desc: "You step into a long hallway lined with vintage posters of 80s tech icons. You see doors labeled 'Server Room' to the north and 'Break Room' to the south. Your office is back east.",
-    items: [],
-    exits: { north: 'serverRoom', south: 'breakRoom', east: 'office' }
-  },
-  breakRoom: {
-    desc: "The break room smells like burnt coffee. There's an old vending machine humming in the corner. You spot a dusty floppy disk on the counter.",
-    items: ['floppy disk'],
-    exits: { north: 'hallway' }
-  },
-  serverRoom: {
-    desc: "You enter a cold, humming server room filled with blinking lights. A terminal glows in the corner with a message: 'Awaiting code input to stabilize the Internet...'.",
-    items: [],
-    exits: { south: 'hallway' }
-  }
-};
-
-function print(text) {
-  output.innerText += text + '\n\n';
-  output.scrollTop = output.scrollHeight;
-}
-
-function showLocation() {
-  print(locations[location].desc);
-}
-
-function handleCommand(cmd) {
-  if (gameOver) return;
-
-  const command = cmd.toLowerCase().trim();
-  const [action, ...args] = command.split(' ');
-  const item = args.join(' ');
-
-  switch(action) {
-    case 'look':
-      showLocation();
-      break;
-
-    case 'go':
-      if (locations[location].exits[item]) {
-        location = locations[location].exits[item];
-        showLocation();
-      } else {
-        print("You can't go that way.");
-      }
-      break;
-
-    case 'take':
-      if (locations[location].items.includes(item)) {
-        inventory.push(item);
-        locations[location].items = locations[location].items.filter(i => i !== item);
-        print(`You take the ${item}.`);
-      } else {
-        print(`There’s no ${item} here.`);
-      }
-      break;
-
-    case 'inventory':
-      print(inventory.length ? `You have: ${inventory.join(', ')}` : "You're not carrying anything.");
-      break;
-
-    case 'use':
-      if (!inventory.includes(item)) {
-        print(`You don't have a ${item}.`);
-        break;
-      }
-
-      if (item === 'email') {
-        print("You open the email. It reads: 'The core code has been corrupted. Find the floppy disk, then reach the server terminal and input the phrase: restore(1985)'.");
-      } else if (item === 'floppy disk' && location === 'serverRoom') {
-        print("You insert the floppy disk into the terminal. It asks for the final code phrase...");
-      } else {
-        print(`You can't use the ${item} here.`);
-      }
-      break;
-
-    case 'help':
-      print("Try exploring each room, picking up useful items, and using them in the right place. Maybe the email contains a hint?");
-      break;
-
-    default:
-      if (command === 'restore(1985)' && location === 'serverRoom' && inventory.includes('floppy disk')) {
-        print("⚡ You type the code... the servers hum louder... the lights flash... CONNECTION RESTORED! ⚡\n\nYou saved the Internet and earned the title: 'Hero of the Digital Age'. 🕶️");
-        gameOver = true;
-      } else {
-        print("Command not recognized.");
-      }
-  }
-}
-
-print("Welcome to CODE HERO: SAVE THE INTERNET.\n\nType 'look' to begin your journey.");
-input.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && input.value) {
-    print('> ' + input.value);
-    handleCommand(input.value);
-    input.value = '';
-  }
-});
-</script>
-</body>
-</html>
+  const locations = {
+    office: {
+      desc: "You're in your dimly lit office. Neon lights flicker outside the window. Your computer hums softly. A new email notification pops up — subject: 'URGENT: Save the Internet!'. There’s a door
