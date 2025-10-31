@@ -1,49 +1,183 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Save the Net — A Retro Dev Text Adventure</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Hero: Save the Internet</title>
 <style>
-  /* Retro neon + simple responsive layout */
-  :root{
-    --bg:#071126;
-    --panel:#071b2b;
-    --accent:#39ff14; /* neon green */
-    --neon:#ff48c4;
-    --muted:#9fb4c8;
-    --glass: rgba(255,255,255,0.03);
-    --crt: rgba(0,0,0,0.12);
-    font-family: "VT323", "Courier New", monospace;
+  body {
+    background-color: #0d0d0d;
+    color: #33ff99;
+    font-family: 'Courier New', monospace;
+    margin: 0;
+    padding: 20px;
   }
-  html,body{height:100%;margin:0;background:
-    radial-gradient(1200px 600px at 10% 10%, rgba(63,12,121,0.12), transparent 10%),
-    linear-gradient(180deg,#021024 0%, #071126 45%, #02040b 100%);color:#dbefff;}
-  .wrap{max-width:980px;margin:24px auto;padding:18px;border-radius:12px;
-        background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12));
-        box-shadow: 0 10px 30px rgba(2,6,23,0.7), inset 0 1px 0 rgba(255,255,255,0.02);}
-  header{display:flex;gap:12px;align-items:center}
-  h1{margin:0;font-size:20px;color:var(--accent);text-shadow:0 0 8px rgba(57,255,20,0.15)}
-  .subtitle{color:var(--muted);font-size:12px}
-  main{display:grid;grid-template-columns: 1fr 320px; gap:16px;margin-top:16px}
-  /* main game window */
-  .game{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.08));
-        padding:16px;border-radius:8px;min-height:460px;box-shadow: inset 0 0 40px var(--crt);}
-  .log{height:340px;overflow:auto;padding:10px;border-radius:6px;background:linear-gradient(180deg, rgba(0,0,0,0.05), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.02)}
-  .choices{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
-  button.choice{background:var(--glass);border:1px solid rgba(255,255,255,0.04);padding:10px 12px;border-radius:6px;color:var(--muted);cursor:pointer}
-  button.choice:hover{box-shadow:0 6px 18px rgba(0,0,0,0.6);transform:translateY(-2px)}
-  /* sidebar */
-  .side{background:#030b12;padding:12px;border-radius:8px;min-height:460px}
-  .inventory{display:flex;flex-direction:column;gap:8px}
-  .item{display:flex;align-items:center;gap:8px;padding:6px;background:rgba(255,255,255,0.02);border-radius:6px;border:1px dashed rgba(255,255,255,0.02)}
-  .frag{color:var(--neon);font-weight:700}
-  .terminal{margin-top:12px;padding:10px;background:#000;border-radius:6px;border:1px solid rgba(255,255,255,0.03)}
-  input[type=text]{width:100%;padding:8px;border-radius:4px;border:1px solid rgba(255,255,255,0.06);background:#08121a;color:#dfeffb;font-family:inherit}
-  .btn{display:inline-block;margin-top:8px;padding:8px 10px;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--neon));color:#02101a;font-weight:700;border:none;cursor:pointer}
-  footer{margin-top:12px;color:var(--muted);font-size:12px;text-align:center}
-  .neonTitle{font-family: 'Courier New', monospace; font-size:12px; letter-spacing:1.2px; color:var(--neon); text-shadow:0 0 8px rgba(255,72,196,0.14)}
-  .hint{font-size:12px;color:#9fb4c8;margin-top:8px}
-  /* inventory icons simple */
-  .icon{width:28px;height:28px;border-radius:4px;display:inline-grid;place-items:center;font-size:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03)}
-  /* small CRT scan
+  #game {
+    max-width: 800px;
+    margin: 0 auto;
+    background: rgba(0,0,0,0.8);
+    border: 2px solid #33ff99;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 0 20px #33ff99;
+  }
+  h1 {
+    text-align: center;
+    color: #ff66cc;
+    text-shadow: 0 0 10px #ff66cc;
+  }
+  #output {
+    white-space: pre-line;
+    margin-bottom: 20px;
+    min-height: 200px;
+  }
+  input {
+    width: 100%;
+    padding: 10px;
+    background: black;
+    border: 1px solid #33ff99;
+    color: #33ff99;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+  }
+  .key {
+    margin-top: 20px;
+    padding: 10px;
+    border-top: 1px solid #33ff99;
+  }
+  .key h3 {
+    color: #ff66cc;
+  }
+</style>
+</head>
+<body>
+<div id="game">
+  <h1>💾 CODE HERO: SAVE THE INTERNET 🌐</h1>
+  <div id="output"></div>
+  <input type="text" id="input" placeholder="Type your command..." autofocus />
+  <div class="key">
+    <h3>🕹️ Suggested Actions:</h3>
+    <p><strong>look</strong> – observe your surroundings<br>
+    <strong>take [item]</strong> – pick up something useful<br>
+    <strong>go [direction]</strong> – move to another area (north, south, east, west)<br>
+    <strong>use [item]</strong> – use an item<br>
+    <strong>inventory</strong> – check what you have<br>
+    <strong>help</strong> – get hints<br></p>
+  </div>
+</div>
+
+<script>
+const output = document.getElementById('output');
+const input = document.getElementById('input');
+
+let inventory = [];
+let location = 'office';
+let gameOver = false;
+
+const locations = {
+  office: {
+    desc: "You're in your dimly lit office. Neon lights flicker outside the window. Your computer hums softly. A new email notification pops up — subject: 'URGENT: Save the Internet!'. There’s a door to the west.",
+    items: ['email'],
+    exits: { west: 'hallway' }
+  },
+  hallway: {
+    desc: "You step into a long hallway lined with vintage posters of 80s tech icons. You see doors labeled 'Server Room' to the north and 'Break Room' to the south. Your office is back east.",
+    items: [],
+    exits: { north: 'serverRoom', south: 'breakRoom', east: 'office' }
+  },
+  breakRoom: {
+    desc: "The break room smells like burnt coffee. There's an old vending machine humming in the corner. You spot a dusty floppy disk on the counter.",
+    items: ['floppy disk'],
+    exits: { north: 'hallway' }
+  },
+  serverRoom: {
+    desc: "You enter a cold, humming server room filled with blinking lights. A terminal glows in the corner with a message: 'Awaiting code input to stabilize the Internet...'.",
+    items: [],
+    exits: { south: 'hallway' }
+  }
+};
+
+function print(text) {
+  output.innerText += text + '\n\n';
+  output.scrollTop = output.scrollHeight;
+}
+
+function showLocation() {
+  print(locations[location].desc);
+}
+
+function handleCommand(cmd) {
+  if (gameOver) return;
+
+  const command = cmd.toLowerCase().trim();
+  const [action, ...args] = command.split(' ');
+  const item = args.join(' ');
+
+  switch(action) {
+    case 'look':
+      showLocation();
+      break;
+
+    case 'go':
+      if (locations[location].exits[item]) {
+        location = locations[location].exits[item];
+        showLocation();
+      } else {
+        print("You can't go that way.");
+      }
+      break;
+
+    case 'take':
+      if (locations[location].items.includes(item)) {
+        inventory.push(item);
+        locations[location].items = locations[location].items.filter(i => i !== item);
+        print(`You take the ${item}.`);
+      } else {
+        print(`There’s no ${item} here.`);
+      }
+      break;
+
+    case 'inventory':
+      print(inventory.length ? `You have: ${inventory.join(', ')}` : "You're not carrying anything.");
+      break;
+
+    case 'use':
+      if (!inventory.includes(item)) {
+        print(`You don't have a ${item}.`);
+        break;
+      }
+
+      if (item === 'email') {
+        print("You open the email. It reads: 'The core code has been corrupted. Find the floppy disk, then reach the server terminal and input the phrase: restore(1985)'.");
+      } else if (item === 'floppy disk' && location === 'serverRoom') {
+        print("You insert the floppy disk into the terminal. It asks for the final code phrase...");
+      } else {
+        print(`You can't use the ${item} here.`);
+      }
+      break;
+
+    case 'help':
+      print("Try exploring each room, picking up useful items, and using them in the right place. Maybe the email contains a hint?");
+      break;
+
+    default:
+      if (command === 'restore(1985)' && location === 'serverRoom' && inventory.includes('floppy disk')) {
+        print("⚡ You type the code... the servers hum louder... the lights flash... CONNECTION RESTORED! ⚡\n\nYou saved the Internet and earned the title: 'Hero of the Digital Age'. 🕶️");
+        gameOver = true;
+      } else {
+        print("Command not recognized.");
+      }
+  }
+}
+
+print("Welcome to CODE HERO: SAVE THE INTERNET.\n\nType 'look' to begin your journey.");
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && input.value) {
+    print('> ' + input.value);
+    handleCommand(input.value);
+    input.value = '';
+  }
+});
+</script>
+</body>
+</html>
