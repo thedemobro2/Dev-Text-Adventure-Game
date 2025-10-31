@@ -49,6 +49,31 @@
   /* small CRT scanlines */
   .scanlines{position:relative}
   .scanlines:after{content:"";position:absolute;top:0;left:0;right:0;bottom:0;background-image:linear-gradient(rgba(0,0,0,0.02) 50%, transparent 50%);background-size:100% 4px;pointer-events:none;border-radius:6px}
+  
+  /* --- NEW: Command Key Styles --- */
+  .command-key {
+      background: rgba(0,0,0,0.3); /* slightly different from terminal */
+  }
+  .command-key ul {
+      list-style-type: '>';
+      margin: 8px 0 0 16px;
+      padding: 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+  }
+  .command-key li {
+      padding-left: 8px;
+      margin-bottom: 4px;
+  }
+  .command-key code {
+      color: var(--accent);
+      background: rgba(57,255,20,0.1);
+      padding: 1px 3px;
+      border-radius: 3px;
+      font-family: inherit;
+  }
+
   @media(max-width:920px){main{grid-template-columns:1fr;}}
 </style>
 </head>
@@ -56,7 +81,7 @@
 <div class="wrap">
   <header>
     <div>
-      <div class="neonTitle">Save the Net — v0.8 • neon dev edition</div>
+      <div class="neonTitle">Save the Net — v0.9 • fixed edition</div>
       <h1>Inbox Panic at 09:13</h1>
       <div class="subtitle">A tiny text adventure — 80s neon, floppy nostalgia, & modern AI shenanigans</div>
     </div>
@@ -84,6 +109,15 @@
         <div id="termMsg" style="margin-top:6px;font-size:13px;color:var(--muted)"></div>
       </div>
 
+      <div class="terminal command-key">
+        <div style="font-size:13px;color:var(--muted)">Command Key</div>
+        <ul>
+          <li>Try: <code>open</code>, <code>inspect</code>, <code>use</code>, <code>look</code></li>
+          <li>Hint: The final code is a function call.</li>
+          <li>e.g. <code>sudo_save_the_internet();</code></li>
+        </ul>
+      </div>
+
       <div style="margin-top:12px;color:var(--muted);font-size:12px">Secrets: try the Konami ↑↑↓↓←→←→ (on keyboard)</div>
     </aside>
   </main>
@@ -103,6 +137,9 @@ const game = {
 
 /* Final code to save the internet — keep simple & memorable */
 const FINAL_CODE = "sudo_save_the_internet();";
+
+/* --- FIX: Konami array uses modern e.key strings --- */
+const konami = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight'];
 
 /* Scenes */
 const scenes = {
@@ -355,10 +392,11 @@ const scenes = {
     ]
   },
 
+  /* --- FIX: Updated failure scene text --- */
   failure:{
     text:[
-      "The code fizzles. The terminal mocks you with ASCII faces. 'Patch incomplete. Try collecting the required fragments: sudo_, save_the_, the_, internet();'",
-      "It looks like pieces are missing."
+      "The code fizzles. The terminal mocks you with ASCII faces. 'Patch incomplete.'",
+      "It looks like pieces are missing or assembled incorrectly. Check your inventory for all the fragments."
     ],
     choices:[
       { t:"Open inventory", a:"open_inventory" },
@@ -447,31 +485,26 @@ termInput.addEventListener('keydown', (e)=> {
   handleKonamiKey(e);
 });
 
+/* --- FIX: Simplified runTerminal function --- */
 function runTerminal(){
   const txt = termInput.value.trim();
   if(!txt){
     termMsg.innerText = "Enter something — nothing happens.";
     return;
   }
+
   addLog(`<div style="color:#9fb4c8">> ${escapeHtml(txt)}</div>`);
+  
   // check if equals final
   if(txt === FINAL_CODE){
     showScene('victory');
     termMsg.innerText = "Patch applied.";
     return;
   }
-  // check if the player has all fragments needed
-  const req = ["sudo_","save_the_","the_","internet();"];
-  const have = Object.values(game.fragments);
-  const all = req.every(r=> have.includes(r));
-  if(all && txt === (game.fragments["Binary Decoder"] || "sudo_") + game.fragments["Floppy Patch"] + (game.fragments["ASM Slip"] || game.fragments["Debugger Fragment"] ? (game.fragments["ASM Slip"]||"the_") : "") + (game.fragments["NeonNet Token"] || "internet();")){
-    // sometimes duplicate names, but if constructed correctly allow success
-    showScene('victory');
-    termMsg.innerText = "Patch applied.";
-  } else {
-    showScene('failure');
-    termMsg.innerText = "Patch failed. Fragments missing or incorrect.";
-  }
+  
+  // If it's not the final code, it's a failure.
+  showScene('failure');
+  termMsg.innerText = "Patch failed. That's not the code.";
 }
 
 /* Utility functions */
@@ -488,10 +521,9 @@ function resetGame(){
   showScene('start');
 }
 
-/* Small Konami easter egg */
-const konami = [38,38,40,40,37,39,37,39];
+/* --- FIX: Updated Konami easter egg logic --- */
 function handleKonamiKey(e){
-  if(e.keyCode === konami[game.konamiProgress]) {
+  if(e.key === konami[game.konamiProgress]) { // Use e.key
     game.konamiProgress++;
     if(game.konamiProgress === konami.length){
       addLog("<div style='color:var(--neon)'>✨ KONAMI EASTER EGG: You've unlocked 'Turbo Floppy Mode' — play faster, wear neon leg warmers.</div>");
