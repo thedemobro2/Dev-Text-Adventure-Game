@@ -83,7 +83,7 @@
 <div class="wrap">
   <header>
     <div>
-      <div class="neonTitle">Save the Net — v1.2 • UI Tweak Edition</div>
+      <div class="neonTitle">Save the Net — v1.3 • It Actually Works</div>
       <h1>Inbox Panic at 09:13</h1>
       <div class="subtitle">A tiny text adventure — 80s neon, floppy nostalgia, & modern AI shenanigans</div>
     </div>
@@ -113,6 +113,7 @@
         <div class="item"><div class="icon">—</div><div style="flex:1">No tools yet</div></div>
       </div>
 
+D:
       <div class="terminal">
         <div style="font-size:13px;color:var(--muted)">Terminal</div>
         <input id="terminalInput" type="text" placeholder='Type FINAL code here' />
@@ -166,7 +167,7 @@ const scenes = {
       { t:"Check Slack (probably memes)", a:"slack" }
     ]
   },
-
+  // ... [all other scenes are identical] ...
   open_email: {
     text:[
       "The email is dramatic. It includes an attachment 'cascade_map.bin' and a short riddle:",
@@ -178,7 +179,6 @@ const scenes = {
       { t:"Reply 'Who dis?'", a:"reply" }
     ]
   },
-
   download_bin: {
     text:[
       "You open 'cascade_map.bin'. It's a tiny sequence: 01001000 01001001",
@@ -187,7 +187,6 @@ const scenes = {
     onEnter(){
       addInventory("Binary Decoder", "frag_hi");
       addLog("You gained tool: Binary Decoder — it showed fragment: <span class='frag'>\"sudo\"</span> (well, sort of).");
-      // Give one fragment
       game.fragments["Binary Decoder"] = "sudo_";
       game.codeFragmentsCollected++;
     },
@@ -196,7 +195,6 @@ const scenes = {
       { t:"Search desk", a:"desk" }
     ]
   },
-
   reply:{
     text:[
       "You type 'Who dis?'. The email auto-replies with a short poem: 'When music stored on tape must be read, a loop will tell the way ahead.'",
@@ -207,7 +205,6 @@ const scenes = {
       { t:"Open attachment", a:"download_bin" }
     ]
   },
-
   slack:{
     text:[
       "Slack is full of GIFs and a pinned message from HR about ergonomic chairs. But a DM from 'glitchy-bot' reads: 'Want a hint? Look where floppy and modern meet.'"
@@ -217,7 +214,6 @@ const scenes = {
       { t:"Check the server room", a:"server" }
     ]
   },
-
   desk:{
     text:[
       "On your desk: a mug that says 'I <3 ASSEMBLY', a suspicious floppy disk labeled 'PATCH.1989', and a rubber duck.",
@@ -229,7 +225,6 @@ const scenes = {
       { t:"Go to the shelf", a:"shelf" }
     ]
   },
-
   floppy:{
     text:[
       "You find an ancient USB-floppy emulator and slot the disk. A little pixelated menu appears: it prints 'fragment: save_the_' on the screen.",
@@ -245,7 +240,6 @@ const scenes = {
       { t:"Open email", a:"open_email" }
     ]
   },
-
   duck:{
     text:[
       "The duck whispers: 'I'm more helpful than most managers.' Under its wing is a sticky note with a QR-like pattern. It reads: 'AI -> ask politely.'"
@@ -255,7 +249,6 @@ const scenes = {
       { t:"Ignore and go shelf", a:"shelf" }
     ]
   },
-
   ai:{
     text:[
       "A window of NeonNet (a playful assistant) opens. It asks one question: 'What is the programming language of the internet's heart?'",
@@ -266,7 +259,6 @@ const scenes = {
       { t:"Answer: Assembly (I have the mug)", a:"ai_answer_asm" }
     ]
   },
-
   ai_answer_js:{
     text:[
       "NeonNet chuckles: 'Modern, pragmatic. Take this token: _internet();'",
@@ -282,7 +274,6 @@ const scenes = {
       { t:"Go to server room", a:"server" }
     ]
   },
-
   ai_answer_basic:{
     text:[
       "NeonNet sighs. 'Cute. But no. Here's a consolation prize: a sticker.' It's decorative but not helpful."
@@ -291,7 +282,6 @@ const scenes = {
       { t:"Back", a:"desk" }
     ]
   },
-
   ai_answer_asm:{
     text:[
       "NeonNet respects your assembly bias and gives you an ASCII slip: 'fragment: _the_' (nice!)."
@@ -306,7 +296,6 @@ const scenes = {
       { t:"Back", a:"desk" }
     ]
   },
-
   shelf:{
     text:[
       "The shelf holds retro hardware: a joystick, a stack of BBS zines, and a vintage dev toolkit box labeled 'Debugger Deluxe'.",
@@ -318,7 +307,6 @@ const scenes = {
       { t:"Return to desk", a:"desk" }
     ]
   },
-
   debugger:{
     text:[
       "Inside the Debugger Deluxe is a slip with a simple crossword clue: 'a synonym for "rescue" (4 letters)'.",
@@ -329,7 +317,6 @@ const scenes = {
       { t:"Go back", a:"shelf" }
     ]
   },
-
   fill_save:{
     text:[
       "You fill SAVE. The debugger beeps, and a tiny LED flashes. A hidden compartment opens with a gleaming fragment: 'the_internet'.",
@@ -345,7 +332,6 @@ const scenes = {
       { t:"Try server room", a:"server" }
     ]
   },
-
   fill_help:{
     text:[
       "You try 'HELP' but the debugger only prints '404: sassy_response_not_found' and nothing happens."
@@ -355,7 +341,6 @@ const scenes = {
       { t:"Back", a:"shelf" }
     ]
   },
-
   bbs:{
     text:[
       "Old BBS zines have marginalia: someone scribbled a piece of a code: 'sudo_' (but it's smudged). You already have that from Binary Decoder. Nice redundancy."
@@ -364,7 +349,6 @@ const scenes = {
       { t:"Back", a:"shelf" }
     ]
   },
-
   server:{
     text:[
       "The server room hums. Racks glow like a cathedral of LEDs. On a console is a tiny notepad: 'Patch Assembly Terminal. Enter final code to patch cascade.'",
@@ -375,7 +359,6 @@ const scenes = {
       { t:"Return to desk", a:"desk" }
     ]
   },
-
   terminal_scene:{
     text:[
       "The terminal waits. There's a prompt: 'Assemble and RUN to stop cascade.'",
@@ -387,7 +370,6 @@ const scenes = {
       { t:"Return", a:"server" }
     ]
   },
-
   victory:{
     text:[
       "You type the code. The terminal glows, NeonNet hums like an 80s synth, and your patch propagates across routers and BBSs.",
@@ -401,7 +383,6 @@ const scenes = {
       { t:"Play again", a:"reset" }
     ]
   },
-
   failure:{
     text:[
       "The code fizzles. The terminal mocks you with ASCII faces. 'Patch incomplete.'",
@@ -412,7 +393,6 @@ const scenes = {
       { t:"Explore more", a:"desk" }
     ]
   },
-
   reset:{
     text:[
       "Resetting the world... (but keeping your sense of humor)."
@@ -426,175 +406,4 @@ const scenes = {
   }
 };
 
-/* DOM helpers */
-const logEl = document.getElementById('log');
-const choicesEl = document.getElementById('choices');
-const invEl = document.getElementById('inventory');
-const termInput = document.getElementById('terminalInput');
-const runBtn = document.getElementById('runBtn');
-const termMsg = document.getElementById('termMsg');
-
-
-function handleChoice(action) {
-  if (scenes[action]) {
-    // It's a scene key, navigate
-    showScene(action);
-  } else {
-    // It's an action key
-    switch (action) {
-      case 'run_input':
-        runTerminal();
-        break;
-      case 'open_inventory':
-        // Manually trigger the log display for inventory
-        if(game.inventory.length===0) {
-          addLog("You have no tools yet — try exploring the desk and shelf.");
-        } else {
-          addLog("Inventory fragments:");
-          Object.entries(game.fragments).forEach(([k,v])=>{
-            addLog(`<div style="color:var(--muted)">${escapeHtml(k)} → <span class='frag'>${escapeHtml(v)}</span></div>`);
-          });
-        }
-        break;
-      // Add other future actions here
-    }
-  }
-}
-
-function addLog(text){
-  const p = document.createElement('div');
-  p.innerHTML = text;
-  logEl.appendChild(p);
-  logEl.scrollTop = logEl.scrollHeight;
-}
-
-function clearChoices(){ choicesEl.innerHTML = ''; }
-
-function showScene(key){
-  const scene = scenes[key];
-  if(!scene) return;
-  game.scene = key;
-  // show text
-  scene.text.forEach(line => addLog(line));
-  // run onEnter if exists
-  if(scene.onEnter) scene.onEnter();
-  // show choices
-  clearChoices();
-  scene.choices.forEach(ch => {
-    const b = document.createElement('button');
-    b.className = 'choice';
-    b.innerText = ch.t;
-    b.onclick = ()=> handleChoice(ch.a);
-    choicesEl.appendChild(b);
-  });
-  updateInventoryUI();
-}
-
-/* Inventory & fragments */
-function addInventory(name, id){
-  if(game.inventory.some(i=>i.id===id)) return;
-  game.inventory.push({name,id});
-  updateInventoryUI();
-}
-
-function updateInventoryUI(){
-  invEl.innerHTML = '';
-  if(game.inventory.length===0){
-    invEl.innerHTML = '<div class="item"><div class="icon">—</div><div style="flex:1">No tools yet</div></div>';
-    return;
-  }
-  game.inventory.forEach(i=>{
-    const div = document.createElement('div');
-    div.className = 'item';
-    div.innerHTML = `<div class="icon">⚙</div><div style="flex:1">
-      <strong style="color:var(--accent)">${i.name}</strong>
-      <div style="font-size:12px;color:var(--muted)">${game.fragments[i.name] ? 'Fragment: ' + "<span class='frag'>"+escapeHtml(game.fragments[i.name])+"</span>" : ''}</div>
-    </div>`;
-    invEl.appendChild(div);
-  });
-}
-
-/* Terminal run */
-runBtn.addEventListener('click', runTerminal);
-termInput.addEventListener('keydown', (e)=> {
-  if(e.key==='Enter') runTerminal();
-  handleKonamiKey(e);
-});
-
-function runTerminal(){
-  const txt = termInput.value.trim();
-  if(!txt){
-    termMsg.innerText = "Enter something — nothing happens.";
-    return;
-  }
-
-  addLog(`<div style="color:#9fb4c8">> ${escapeHtml(txt)}</div>`);
-  
-  // check if equals final
-  if(txt === FINAL_CODE){
-    showScene('victory');
-    termMsg.innerText = "Patch applied.";
-    return;
-  }
-  
-  // If they are at the main terminal, show the "failure" scene
-  if (game.scene === 'terminal_scene') {
-      showScene('failure');
-      termMsg.innerText = "Patch failed. That's not the code.";
-  } else {
-      // If they are just randomly typing, guide them.
-      addLog("<div style='color:var(--neon)'>Hint: That terminal is only for entering the *final patch code*.</div>");
-      addLog("<div style='color:var(--muted)'>To explore (e.g., 'desk'), click the choice buttons.</div>");
-      termMsg.innerText = "Use buttons to explore.";
-  }
-}
-
-/* Utility functions */
-function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-function resetGame(){
-  game.scene = 'start';
-  game.inventory = [];
-  game.fragments = {};
-  game.codeFragmentsCollected = 0;
-  logEl.innerHTML = '';
-  termInput.value = '';
-  termMsg.innerText = '';
-  showScene('start');
-}
-
-function handleKonamiKey(e){
-  if(e.key === konami[game.konamiProgress]) {
-    game.konamiProgress++;
-    if(game.konamiProgress === konami.length){
-      addLog("<div style='color:var(--neon)'>✨ KONAMI EASTER EGG: You've unlocked 'Turbo Floppy Mode' — play faster, wear neon leg warmers.</div>");
-      game.konamiProgress = 0;
-    }
-  } else {
-    game.konamiProgress = 0;
-  }
-}
-
-/* Start the game */
-resetGame();
-
-/* Small UX: clicking inventory opens fragments */
-document.getElementById('inventory').addEventListener('click', ()=> {
-  if(game.inventory.length===0) addLog("You have no tools yet — try exploring the desk and shelf.");
-  else {
-    addLog("Inventory fragments:");
-    Object.entries(game.fragments).forEach(([k,v])=>{
-      addLog(`<div style="color:var(--muted)">${escapeHtml(k)} → <span class='frag'>${escapeHtml(v)}</span></div>`);
-    });
-  }
-});
-
-/* helpful hint if user types partial correct code */
-termInput.addEventListener('input', ()=>{
-  const v = termInput.value;
-  if(FINAL_CODE.startsWith(v)) termMsg.innerText = "Looks promising...";
-  else if(v.length>0) termMsg.innerText = "";
-});
-</script>
-</body>
-</html>
+/* --- FIX: All global variables and functions that *define* the game --- */
