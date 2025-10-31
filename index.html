@@ -52,7 +52,7 @@
 <div class="wrap">
   <header>
     <div>
-      <div class="neonTitle">Save the Net — v2.0 • Parser Edition</div>
+      <div class="neonTitle">Save the Net — v2.1 • Visibility Fix</div>
       <h1>Inbox Panic at 09:13</h1>
       <div class="subtitle">A tiny text adventure — 80s neon, floppy nostalgia, & modern AI shenanigans</div>
     </div>
@@ -61,8 +61,7 @@
   <main>
     <section class="game">
       <div id="log" class="log scanlines" aria-live="polite"></div>
-      
-      </section>
+    </section>
 
     <aside class="side">
       <h3 style="margin:0;color:var(--accent)">Inventory</h3>
@@ -87,7 +86,7 @@
 <script>
 /* Game data and state */
 const game = {
-  currentLocation: 'start', // <-- MODIFIED: Was 'scene'
+  currentLocation: 'start',
   inventory: [],
   fragments: {},
   codeFragmentsCollected: 0,
@@ -100,7 +99,6 @@ const konami = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'Ar
 
 /* Scenes (now act as command results) */
 const scenes = {
-  // NOTE: The 'choices' arrays are now just for my reference, they are not used.
   start: {
     text: [
       "You are Devon (a mild-mannered developer), hunched over a humming CRT at 09:13 on a Tuesday.",
@@ -269,31 +267,22 @@ const scenes = {
 /* --- Global DOM variables --- */
 let logEl, invEl, termInput, runBtn, termMsg;
 
-/* --- MODIFIED: showScene no longer handles choices --- */
 function showScene(key){
   const scene = scenes[key];
   if(!scene) {
     addLog(`<div style="color:var(--neon)">That doesn't make sense.</div>`);
     return;
   }
-  
-  // Set the new location
   game.currentLocation = key;
-  
-  // Print scene text
   scene.text.forEach(line => addLog(line));
-  
-  // Run onEnter event if it exists
   if(scene.onEnter) scene.onEnter();
-  
-  // Update inventory UI
   updateInventoryUI();
 }
 
 /* --- NEW: The Parser! This is the game's new brain --- */
 function parseCommand(txt) {
-  // Always log the command
-  addLog(`<div style="color:#9fb4c8">> ${escapeHtml(txt)}</div>`);
+  // --- BUGFIX: Changed color to var(--accent) ---
+  addLog(`<div style="color:var(--accent)">> ${escapeHtml(txt)}</div>`);
   
   // --- 1. Check for Win ---
   if(txt === FINAL_CODE) {
@@ -307,7 +296,6 @@ function parseCommand(txt) {
       addLog("--- HELP ---");
       addLog("Type commands to interact. Try: <ul><li><span class='frag'>look</span> (repeats room description)</li><li><span class='frag'>look [item]</span> (e.g., look desk)</li><li><span class='frag'>open [item]</span> (e.g., open email)</li><li><span class='frag'>go [location]</span> (e.g., go shelf)</li><li><span class='frag'>inventory</span> (or <span class='frag'>i</span>)</li><li><span class='frag'>reset</span> (restarts the game)</li></ul>");
       return;
-      
     case 'inventory':
     case 'i':
       if(game.inventory.length === 0) {
@@ -321,12 +309,10 @@ function parseCommand(txt) {
         });
       }
       return;
-      
     case 'look':
     case 'l':
       showScene(game.currentLocation);
       return;
-      
     case 'reset':
       resetGame();
       return;
@@ -523,8 +509,6 @@ document.addEventListener('DOMContentLoaded', () => {
     handleKonamiKey(e);
   });
   
-  // No more inventory click listener, it's handled by parser
-
   termInput.addEventListener('input', ()=>{
     const v = termInput.value;
     if(FINAL_CODE.startsWith(v)) termMsg.innerText = "Looks promising...";
