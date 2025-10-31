@@ -1,80 +1,540 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Code Hero: Save the Internet</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Save the Net — A Retro Dev Text Adventure</title>
 <style>
-  body {
-    background-color: #0d0d0d;
-    color: #33ff99;
-    font-family: 'Courier New', monospace;
-    margin: 0;
-    padding: 20px;
+  /* --- Style changes --- */
+  :root{
+    --bg:#071126;
+    --panel:#071b2b;
+    --accent:#39ff14;
+    --neon:#ff48c4;
+    --muted:#9fb4c8;
+    --glass: rgba(255,255,255,0.03);
+    --crt: rgba(0,0,0,0.12);
+    font-family: "VT323", "Courier New", monospace;
   }
-  #game {
-    max-width: 800px;
-    margin: 0 auto;
-    background: rgba(0,0,0,0.8);
-    border: 2px solid #33ff99;
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 0 20px #33ff99;
-  }
-  h1 {
-    text-align: center;
-    color: #ff66cc;
-    text-shadow: 0 0 10px #ff66cc;
-  }
-  #output {
-    white-space: pre-line;
-    margin-bottom: 20px;
-    min-height: 200px;
-  }
-  input {
-    width: 100%;
-    padding: 10px;
-    background: black;
-    border: 1px solid #33ff99;
-    color: #33ff99;
-    font-family: 'Courier New', monospace;
-    font-size: 16px;
-  }
-  .key {
-    margin-top: 20px;
-    padding: 10px;
-    border-top: 1px solid #33ff99;
-  }
-  .key h3 {
-    color: #ff66cc;
-  }
+  html,body{height:100%;margin:0;background:
+    radial-gradient(1200px 600px at 10% 10%, rgba(63,12,121,0.12), transparent 10%),
+    linear-gradient(180deg,#021024 0%, #071126 45%, #02040b 100%);color:#dbefff;}
+  .wrap{max-width:980px;margin:24px auto;padding:18px;border-radius:12px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12));
+        box-shadow: 0 10px 30px rgba(2,6,23,0.7), inset 0 1px 0 rgba(255,255,255,0.02);}
+  header{display:flex;gap:12px;align-items:center}
+  h1{margin:0;font-size:20px;color:var(--accent);text-shadow:0 0 8px rgba(57,255,20,0.15)}
+  .subtitle{color:var(--muted);font-size:12px}
+  main{display:grid;grid-template-columns: 1fr 320px; gap:16px;margin-top:16px}
+  .game{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.08));
+        padding:16px;border-radius:8px;min-height:460px;box-shadow: inset 0 0 40px var(--crt);}
+  
+  /* --- MODIFIED: Log is taller, no choices div --- */
+  .log{height:460px;overflow:auto;padding:10px;border-radius:6px;background:linear-gradient(180deg, rgba(0,0,0,0.05), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.02)}
+  
+  .side{background:#030b12;padding:12px;border-radius:8px;min-height:460px}
+  .inventory{display:flex;flex-direction:column;gap:8px}
+  .item{display:flex;align-items:center;gap:8px;padding:6px;background:rgba(255,255,255,0.02);border-radius:6px;border:1px dashed rgba(255,255,255,0.02)}
+  .frag{color:var(--neon);font-weight:700}
+  .terminal{margin-top:12px;padding:10px;background:#000;border-radius:6px;border:1px solid rgba(255,255,255,0.03)}
+  input[type=text]{width:100%;padding:8px;border-radius:4px;border:1px solid rgba(255,255,255,0.06);background:#08121a;color:#dfeffb;font-family:inherit}
+  .btn{display:inline-block;margin-top:8px;padding:8px 10px;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--neon));color:#02101a;font-weight:700;border:none;cursor:pointer}
+  footer{margin-top:12px;color:var(--muted);font-size:12px;text-align:center}
+  .neonTitle{font-family: 'Courier New', monospace; font-size:12px; letter-spacing:1.2px; color:var(--neon); text-shadow:0 0 8px rgba(255,72,196,0.14)}
+  .icon{width:28px;height:28px;border-radius:4px;display:inline-grid;place-items:center;font-size:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03)}
+  .scanlines{position:relative}
+  .scanlines:after{content:"";position:absolute;top:0;left:0;right:0;bottom:0;background-image:linear-gradient(rgba(0,0,0,0.02) 50%, transparent 50%);background-size:100% 4px;pointer-events:none;border-radius:6px}
+  
+  @media(max-width:920px){main{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
-<div id="game">
-  <h1>💾 CODE HERO: SAVE THE INTERNET 🌐</h1>
-  <div id="output"></div>
-  <input type="text" id="input" placeholder="Type your command..." autofocus />
-  <div class="key">
-    <h3>🕹️ Suggested Actions:</h3>
-    <p><strong>look</strong> – observe your surroundings<br>
-    <strong>take [item]</strong> – pick up something useful<br>
-    <strong>go [direction]</strong> – move to another area (north, south, east, west)<br>
-    <strong>use [item]</strong> – use an item<br>
-    <strong>inventory</strong> – check what you have<br>
-    <strong>help</strong> – get hints</p>
-  </div>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="neonTitle">Save the Net — v2.0 • Parser Edition</div>
+      <h1>Inbox Panic at 09:13</h1>
+      <div class="subtitle">A tiny text adventure — 80s neon, floppy nostalgia, & modern AI shenanigans</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="game">
+      <div id="log" class="log scanlines" aria-live="polite"></div>
+      
+      </section>
+
+    <aside class="side">
+      <h3 style="margin:0;color:var(--accent)">Inventory</h3>
+      <div id="inventory" class="inventory" style="margin-top:8px">
+        <div class="item"><div class="icon">—</div><div style="flex:1">No tools yet</div></div>
+      </div>
+
+      <div class="terminal">
+        <div style="font-size:13px;color:var(--muted)">Terminal (Type 'help')</div>
+        <input id="terminalInput" type="text" placeholder='Type command (e.g., look desk)' />
+        <button id="runBtn" class="btn">RUN</button>
+        <div id="termMsg" style="margin-top:6px;font-size:13px;color:var(--muted)"></div>
+      </div>
+      
+      <div style="margin-top:12px;color:var(--muted);font-size:12px">Secrets: try the Konami ↑↑↓↓←→←→ (on keyboard)</div>
+    </aside>
+  </main>
+
+  <footer>Made with +1 floppy, +2 coffee, and one suspicious AI named 'NeonNet'</footer>
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  const output = document.getElementById('output');
-  const input = document.getElementById('input');
+/* Game data and state */
+const game = {
+  currentLocation: 'start', // <-- MODIFIED: Was 'scene'
+  inventory: [],
+  fragments: {},
+  codeFragmentsCollected: 0,
+  konamiProgress: 0
+};
 
-  let inventory = [];
-  let location = 'office';
-  let gameOver = false;
+/* Final code to save the internet */
+const FINAL_CODE = "sudo_save_the_internet();";
+const konami = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight'];
 
-  const locations = {
-    office: {
-      desc: "You're in your dimly lit office. Neon lights flicker outside the window. Your computer hums softly. A new email notification pops up — subject: 'URGENT: Save the Internet!'. There’s a door
+/* Scenes (now act as command results) */
+const scenes = {
+  // NOTE: The 'choices' arrays are now just for my reference, they are not used.
+  start: {
+    text: [
+      "You are Devon (a mild-mannered developer), hunched over a humming CRT at 09:13 on a Tuesday.",
+      "An email pings: SUBJECT: ⚠️ 'SYSTEM: Critical network cascade detected' — sender: unknown@neonnet.ai",
+      "It says: 'Find the tools, assemble the patch, and run the code to stop the cascade.'",
+      "You have a laptop, a weird office full of relics, and about 3 cups of suspicious coffee.",
+      "You are at your <span class='frag'>desk</span>."
+    ]
+  },
+  open_email: {
+    text:[
+      "The email is dramatic. It includes an attachment 'cascade_map.bin' and a short riddle:",
+      "\"I speak in ones and zeros, but I say hello — convert my waves to letters to move forward.\"",
+      "You can <span class='frag'>download attachment</span> or <span class='frag'>reply</span>."
+    ]
+  },
+  download_bin: {
+    text:[
+      "You open 'cascade_map.bin'. It's a tiny sequence: 01001000 01001001",
+      "Binary! You recall that 01001000 = H and 01001001 = I."
+    ],
+    onEnter(){
+      addInventory("Binary Decoder", "frag_hi");
+      addLog("You gained tool: Binary Decoder — it showed fragment: <span class='frag'>\"sudo\"</span> (well, sort of).");
+      game.fragments["Binary Decoder"] = "sudo_";
+      game.codeFragmentsCollected++;
+    }
+  },
+  reply:{
+    text:[
+      "You type 'Who dis?'. The email auto-replies with a short poem: 'When music stored on tape must be read, a loop will tell the way ahead.'",
+      "You remember your old cassette player on the <span class='frag'>shelf</span>."
+    ]
+  },
+  slack:{
+    text:[
+      "Slack is full of GIFs and a pinned message from HR about ergonomic chairs. But a DM from 'glitchy-bot' reads: 'Want a hint? Look where floppy and modern meet.'"
+    ]
+  },
+  desk:{
+    text:[
+      "On your desk: a mug that says 'I <3 ASSEMBLY', a suspicious floppy disk labeled 'PATCH.1989', and a rubber duck.",
+      "You can <span class='frag'>use floppy</span>, <span class='frag'>talk to duck</span>, or look at the <span class='frag'>shelf</span>."
+    ]
+  },
+  floppy:{
+    text:[
+      "You find an ancient USB-floppy emulator and slot the disk. A little pixelated menu appears: it prints 'fragment: save_the_' on the screen.",
+    ],
+    onEnter(){
+      addInventory("Floppy Patch", "frag_save");
+      game.fragments["Floppy Patch"] = "save_the_";
+      game.codeFragmentsCollected++;
+      addLog("You got fragment: <span class='frag'>\"save_the_\"</span>");
+    }
+  },
+  duck:{
+    text:[
+      "The duck whispers: 'I'm more helpful than most managers.' Under its wing is a sticky note with a QR-like pattern. It reads: 'AI -> ask politely.'",
+      "You can <span class='frag'>use ai</span>."
+    ]
+  },
+  ai:{
+    text:[
+      "A window of NeonNet (a playful assistant) opens. It asks one question: 'What is the programming language of the internet's heart?'",
+      "You can answer <span class='frag'>javascript</span>, <span class='frag'>basic</span>, or <span class='frag'>assembly</span>."
+    ]
+  },
+  ai_answer_js:{
+    text:[
+      "NeonNet chuckles: 'Modern, pragmatic. Take this token: _internet();'",
+    ],
+    onEnter(){
+      addInventory("NeonNet Token", "frag_internet");
+      game.fragments["NeonNet Token"] = "internet();";
+      game.codeFragmentsCollected++;
+      addLog("NeonNet gave you fragment: <span class='frag'>\"internet();\"</span>");
+    }
+  },
+  ai_answer_basic:{
+    text:[
+      "NeonNet sighs. 'Cute. But no. Here's a consolation prize: a sticker.' It's decorative but not helpful."
+    ]
+  },
+  ai_answer_asm:{
+    text:[
+      "NeonNet respects your assembly bias and gives you an ASCII slip: 'fragment: _the_' (nice!)."
+    ],
+    onEnter(){
+      addInventory("ASM Slip", "frag_the");
+      game.fragments["ASM Slip"] = "the_";
+      game.codeFragmentsCollected++;
+      addLog("You found fragment: <span class='frag'>\"the_\"</span>");
+    }
+  },
+  shelf:{
+    text:[
+      "The shelf holds retro hardware: a joystick, a stack of BBS zines, and a vintage dev toolkit box labeled 'Debugger Deluxe'.",
+      "You can <span class='frag'>open debugger</span> or <span class='frag'>read zines</span>."
+    ]
+  },
+  debugger:{
+    text:[
+      "Inside the Debugger Deluxe is a slip with a simple crossword clue: 'a synonym for "rescue" (4 letters)'.",
+      "You can answer <span class='frag'>save</span> or <span class='frag'>help</span>."
+    ]
+  },
+  fill_save:{
+    text:[
+      "You fill SAVE. The debugger beeps, and a tiny LED flashes. A hidden compartment opens with a gleaming fragment: 'the_internet'.",
+    ],
+    onEnter(){
+      addInventory("Debugger Fragment", "frag_theinternet");
+      game.fragments["Debugger Fragment"] = "the_internet";
+      game.codeFragmentsCollected++;
+      addLog("You gained fragment: <span class='frag'>\"the_internet\"</span>");
+    }
+  },
+  fill_help:{
+    text:[
+      "You try 'HELP' but the debugger only prints '404: sassy_response_not_found' and nothing happens."
+    ]
+  },
+  bbs:{
+    text:[
+      "Old BBS zines have marginalia: someone scribbled a piece of a code: 'sudo_' (but it's smudged). You already have that from Binary Decoder. Nice redundancy."
+    ]
+  },
+  server:{
+    text:[
+      "The server room hums. Racks glow like a cathedral of LEDs. On a console is a tiny notepad: 'Patch Assembly Terminal. Enter final code to patch cascade.'",
+      "You can <span class='frag'>use terminal</span> here to enter the code."
+    ]
+  },
+  terminal_scene:{
+    text:[
+      "The terminal waits. There's a prompt: 'Assemble and RUN to stop cascade.'",
+      "This is it. Type the final code into the terminal to win."
+    ]
+  },
+  victory:{
+    text:[
+      "You type the code. The terminal glows, NeonNet hums like an 80s synth, and your patch propagates across routers and BBSs.",
+      "The cascade dissipates like static. You saved the internet. The rubber duck applauds. A message appears: 'Thanks, Devon. World saved. Pizza on me.'"
+    ],
+    onEnter(){
+      addLog("<strong style='color:var(--accent)'>✅ NETWORK STABLE — PATCH APPLIED</strong>");
+    }
+  },
+  failure:{
+    text:[
+      "The code fizzles. The terminal mocks you with ASCII faces. 'Patch incomplete.'",
+      "It looks like pieces are missing or assembled incorrectly. Check your inventory."
+    ]
+  },
+  reset:{
+    text:[
+      "Resetting the world..."
+    ],
+    onEnter(){
+      resetGame();
+    }
+  }
+};
+
+/* --- Global DOM variables --- */
+let logEl, invEl, termInput, runBtn, termMsg;
+
+/* --- MODIFIED: showScene no longer handles choices --- */
+function showScene(key){
+  const scene = scenes[key];
+  if(!scene) {
+    addLog(`<div style="color:var(--neon)">That doesn't make sense.</div>`);
+    return;
+  }
+  
+  // Set the new location
+  game.currentLocation = key;
+  
+  // Print scene text
+  scene.text.forEach(line => addLog(line));
+  
+  // Run onEnter event if it exists
+  if(scene.onEnter) scene.onEnter();
+  
+  // Update inventory UI
+  updateInventoryUI();
+}
+
+/* --- NEW: The Parser! This is the game's new brain --- */
+function parseCommand(txt) {
+  // Always log the command
+  addLog(`<div style="color:#9fb4c8">> ${escapeHtml(txt)}</div>`);
+  
+  // --- 1. Check for Win ---
+  if(txt === FINAL_CODE) {
+    showScene('victory');
+    return;
+  }
+  
+  // --- 2. Handle Global Commands (work anywhere) ---
+  switch(txt) {
+    case 'help':
+      addLog("--- HELP ---");
+      addLog("Type commands to interact. Try: <ul><li><span class='frag'>look</span> (repeats room description)</li><li><span class='frag'>look [item]</span> (e.g., look desk)</li><li><span class='frag'>open [item]</span> (e.g., open email)</li><li><span class='frag'>go [location]</span> (e.g., go shelf)</li><li><span class='frag'>inventory</span> (or <span class='frag'>i</span>)</li><li><span class='frag'>reset</span> (restarts the game)</li></ul>");
+      return;
+      
+    case 'inventory':
+    case 'i':
+      if(game.inventory.length === 0) {
+        addLog("Your inventory is empty.");
+      } else {
+        addLog("You are carrying:");
+        game.inventory.forEach(item => addLog(`- ${item.name}`));
+        addLog("--- Fragments ---");
+        Object.entries(game.fragments).forEach(([k,v])=>{
+          addLog(`<div style="color:var(--muted)">${escapeHtml(k)} → <span class='frag'>${escapeHtml(v)}</span></div>`);
+        });
+      }
+      return;
+      
+    case 'look':
+    case 'l':
+      showScene(game.currentLocation);
+      return;
+      
+    case 'reset':
+      resetGame();
+      return;
+  }
+
+  // --- 3. Handle Location/Context-Specific Commands ---
+  const loc = game.currentLocation;
+  
+  switch(txt) {
+    // Start / Desk commands
+    case 'look desk':
+    case 'go desk':
+      showScene('desk');
+      break;
+    case 'open email':
+      showScene('open_email');
+      break;
+    case 'check slack':
+    case 'use slack':
+      showScene('slack');
+      break;
+    
+    // Email commands
+    case 'download attachment':
+    case 'download':
+      if (loc === 'open_email') showScene('download_bin');
+      else addLog("You can't do that right now.");
+      break;
+    case 'reply':
+      if (loc === 'open_email') showScene('reply');
+      else addLog("You can't do that right now.");
+      break;
+      
+    // Desk commands
+    case 'use floppy':
+    case 'insert floppy':
+      if (loc === 'desk') showScene('floppy');
+      else addLog("You need to be at your desk.");
+      break;
+    case 'talk to duck':
+    case 'use duck':
+    case 'speak to duck':
+      if (loc === 'desk') showScene('duck');
+      else addLog("You need to be at your desk.");
+      break;
+    
+    // AI commands
+    case 'use ai':
+    case 'invoke ai':
+      if (loc === 'duck' || loc === 'ai') showScene('ai');
+      break;
+    case 'answer javascript':
+    case 'javascript':
+      if (loc === 'ai') showScene('ai_answer_js');
+      else addLog("Now is not the time for JavaScript.");
+      break;
+    case 'answer basic':
+    case 'basic':
+      if (loc === 'ai') showScene('ai_answer_basic');
+      else addLog("Now is not the time for BASIC.");
+      break;
+    case 'answer assembly':
+    case 'assembly':
+      if (loc === 'ai') showScene('ai_answer_asm');
+      else addLog("Now is not the time for Assembly.");
+      break;
+      
+    // Shelf commands
+    case 'go shelf':
+    case 'look shelf':
+    case 'check shelf':
+      showScene('shelf');
+      break;
+    case 'open debugger':
+    case 'use debugger':
+      if (loc === 'shelf') showScene('debugger');
+      break;
+    case 'read zines':
+    case 'read bbs zines':
+      if (loc === 'shelf') showScene('bbs');
+      break;
+      
+    // Debugger commands
+    case 'answer save':
+    case 'save':
+      if (loc === 'debugger') showScene('fill_save');
+      break;
+    case 'answer help':
+      if (loc === 'debugger') showScene('fill_help');
+      break;
+      
+    // Server room
+    case 'go server':
+    case 'go server room':
+    case 'check server room':
+      showScene('server');
+      break;
+    case 'use terminal':
+    case 'open terminal':
+      if (loc === 'server') showScene('terminal_scene');
+      else addLog("You must be in the server room to use that terminal.");
+      break;
+
+    // --- 4. Handle Failure ---
+    default:
+      // Check for the "final code" fail state
+      if (txt.includes('sudo')) {
+        showScene('failure');
+      } else {
+        addLog(`I don't understand the command "<span class='frag'>${escapeHtml(txt)}</span>". Type 'help' for commands.`);
+      }
+  }
+}
+
+/* --- Helper functions --- */
+function addLog(text){
+  const p = document.createElement('div');
+  p.innerHTML = text;
+  logEl.appendChild(p);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function addInventory(name, id){
+  if(game.inventory.some(i=>i.id===id)) return;
+  game.inventory.push({name,id});
+  updateInventoryUI();
+}
+
+function updateInventoryUI(){
+  invEl.innerHTML = '';
+  if(game.inventory.length===0){
+    invEl.innerHTML = '<div class="item"><div class="icon">—</div><div style="flex:1">No tools yet</div></div>';
+    return;
+  }
+  game.inventory.forEach(i=>{
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = `<div class="icon">⚙</div><div style="flex:1">
+      <strong style="color:var(--accent)">${i.name}</strong>
+      <div style="font-size:12px;color:var(--muted)">${game.fragments[i.name] ? 'Fragment: ' + "<span class='frag'>"+escapeHtml(game.fragments[i.name])+"</span>" : ''}</div>
+    </div>`;
+    invEl.appendChild(div);
+  });
+}
+
+function runTerminal(){
+  const txt = termInput.value.trim().toLowerCase();
+  if(!txt) return;
+  
+  termInput.value = ''; // Clear input
+  termMsg.innerText = ''; // Clear hints
+  
+  parseCommand(txt);
+}
+
+function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function resetGame(){
+  game.currentLocation = 'start';
+  game.inventory = [];
+  game.fragments = {};
+  game.codeFragmentsCollected = 0;
+  logEl.innerHTML = '';
+  termInput.value = '';
+  termMsg.innerText = '';
+  showScene('start');
+}
+
+function handleKonamiKey(e){
+  if(e.key === konami[game.konamiProgress]) {
+    game.konamiProgress++;
+    if(game.konamiProgress === konami.length){
+      addLog("<div style='color:var(--neon)'>✨ KONAMI EASTER EGG: You've unlocked 'Turbo Floppy Mode' — play faster, wear neon leg warmers.</div>");
+      game.konamiProgress = 0;
+    }
+  } else {
+    game.konamiProgress = 0;
+  }
+}
+
+/* --- Main Game Start --- */
+document.addEventListener('DOMContentLoaded', () => {
+  // 1. Find all elements
+  logEl = document.getElementById('log');
+  invEl = document.getElementById('inventory');
+  termInput = document.getElementById('terminalInput');
+  runBtn = document.getElementById('runBtn');
+  termMsg = document.getElementById('termMsg');
+
+  // 2. Attach listeners
+  runBtn.addEventListener('click', runTerminal);
+  termInput.addEventListener('keydown', (e)=> {
+    if(e.key==='Enter') runTerminal();
+    handleKonamiKey(e);
+  });
+  
+  // No more inventory click listener, it's handled by parser
+
+  termInput.addEventListener('input', ()=>{
+    const v = termInput.value;
+    if(FINAL_CODE.startsWith(v)) termMsg.innerText = "Looks promising...";
+    else if(v.length>0) termMsg.innerText = "";
+  });
+
+  // 3. Start the game
+  resetGame();
+});
+
+</script>
+</body>
+</html>
