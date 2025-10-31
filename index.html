@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Save the Net — A Retro Dev Text Adventure</title>
+<style>
+  /* Retro neon + simple responsive layout */
+  :root{
+    --bg:#071126;
+    --panel:#071b2b;
+    --accent:#39ff14; /* neon green */
+    --neon:#ff48c4;
+    --muted:#9fb4c8;
+    --glass: rgba(255,255,255,0.03);
+    --crt: rgba(0,0,0,0.12);
+    font-family: "VT323", "Courier New", monospace;
+  }
+  html,body{height:100%;margin:0;background:
+    radial-gradient(1200px 600px at 10% 10%, rgba(63,12,121,0.12), transparent 10%),
+    linear-gradient(180deg,#021024 0%, #071126 45%, #02040b 100%);color:#dbefff;}
+  .wrap{max-width:980px;margin:24px auto;padding:18px;border-radius:12px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12));
+        box-shadow: 0 10px 30px rgba(2,6,23,0.7), inset 0 1px 0 rgba(255,255,255,0.02);}
+  header{display:flex;gap:12px;align-items:center}
+  h1{margin:0;font-size:20px;color:var(--accent);text-shadow:0 0 8px rgba(57,255,20,0.15)}
+  .subtitle{color:var(--muted);font-size:12px}
+  main{display:grid;grid-template-columns: 1fr 320px; gap:16px;margin-top:16px}
+  /* main game window */
+  .game{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.08));
+        padding:16px;border-radius:8px;min-height:460px;box-shadow: inset 0 0 40px var(--crt);}
+  .log{height:340px;overflow:auto;padding:10px;border-radius:6px;background:linear-gradient(180deg, rgba(0,0,0,0.05), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.02)}
+  .choices{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+  button.choice{background:var(--glass);border:1px solid rgba(255,255,255,0.04);padding:10px 12px;border-radius:6px;color:var(--muted);cursor:pointer}
+  button.choice:hover{box-shadow:0 6px 18px rgba(0,0,0,0.6);transform:translateY(-2px)}
+  /* sidebar */
+  .side{background:#030b12;padding:12px;border-radius:8px;min-height:460px}
+  .inventory{display:flex;flex-direction:column;gap:8px}
+  .item{display:flex;align-items:center;gap:8px;padding:6px;background:rgba(255,255,255,0.02);border-radius:6px;border:1px dashed rgba(255,255,255,0.02)}
+  .frag{color:var(--neon);font-weight:700}
+  .terminal{margin-top:12px;padding:10px;background:#000;border-radius:6px;border:1px solid rgba(255,255,255,0.03)}
+  input[type=text]{width:100%;padding:8px;border-radius:4px;border:1px solid rgba(255,255,255,0.06);background:#08121a;color:#dfeffb;font-family:inherit}
+  .btn{display:inline-block;margin-top:8px;padding:8px 10px;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--neon));color:#02101a;font-weight:700;border:none;cursor:pointer}
+  footer{margin-top:12px;color:var(--muted);font-size:12px;text-align:center}
+  .neonTitle{font-family: 'Courier New', monospace; font-size:12px; letter-spacing:1.2px; color:var(--neon); text-shadow:0 0 8px rgba(255,72,196,0.14)}
+  .hint{font-size:12px;color:#9fb4c8;margin-top:8px}
+  /* inventory icons simple */
+  .icon{width:28px;height:28px;border-radius:4px;display:inline-grid;place-items:center;font-size:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03)}
+  /* small CRT scanlines */
+  .scanlines{position:relative}
+  .scanlines:after{content:"";position:absolute;top:0;left:0;right:0;bottom:0;background-image:linear-gradient(rgba(0,0,0,0.02) 50%, transparent 50%);background-size:100% 4px;pointer-events:none;border-radius:6px}
+  @media(max-width:920px){main{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="neonTitle">Save the Net — v0.8 • neon dev edition</div>
+      <h1>Inbox Panic at 09:13</h1>
+      <div class="subtitle">A tiny text adventure — 80s neon, floppy nostalgia, & modern AI shenanigans</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="game">
+      <div id="log" class="log scanlines" aria-live="polite"></div>
+
+      <div id="choices" class="choices"></div>
+
+      <div class="hint" id="hint">Tip: Explore. Pick up the dev-tools. You'll need a final code string made from fragments.</div>
+    </section>
+
+    <aside class="side">
+      <h3 style="margin:0;color:var(--accent)">Inventory</h3>
+      <div id="inventory" class="inventory" style="margin-top:8px">
+        <div class="item"><div class="icon">—</div><div style="flex:1">No tools yet</div></div>
+      </div>
+
+      <div class="terminal">
+        <div style="font-size:13px;color:var(--muted)">Terminal</div>
+        <input id="terminalInput" type="text" placeholder='Type code here (e.g. sudo_save_the_internet(); )' />
+        <button id="runBtn" class="btn">RUN</button>
+        <div id="termMsg" style="margin-top:6px;font-size:13px;color:var(--muted)"></div>
+      </div>
+
+      <div style="margin-top:12px;color:var(--muted);font-size:12px">Secrets: try the Konami ↑↑↓↓←→←→ (on keyboard)</div>
+    </aside>
+  </main>
+
+  <footer>Made with +1 floppy, +2 coffee, and one suspicious AI named 'NeonNet'</footer>
+</div>
+
+<script>
+/* Game data and state */
+const game = {
+  scene: 'start',
+  inventory: [],
+  fragments: {}, // map tool -> fragment
+  codeFragmentsCollected: 0,
+  konamiProgress: 0
+};
+
+/* Final code to save the internet — keep simple & memorable */
+const FINAL_CODE = "sudo_save_the_internet();";
+
+/* Scenes */
+const scenes = {
+  start: {
+    text: [
+      "You are Devon (a mild-mannered developer), hunched over a humming CRT at 09:13 on a Tuesday.",
+      "An email pings: SUBJECT: ⚠️ 'SYSTEM: Critical network cascade detected' — sender: unknown@neonnet.ai",
+      "It says: 'Find the tools, assemble the patch, and run the code to stop the cascade.'",
+      "You have a laptop, a weird office full of relics, and about 3 cups of suspicious coffee."
+    ],
+    choices:[
+      { t:"Open the email", a:"open_email" },
+      { t:"Look around your desk", a:"desk" },
+      { t:"Check Slack (probably memes)", a:"slack" }
+    ]
+  },
+
+  open_email: {
+    text:[
+      "The email is dramatic. It includes an attachment 'cascade_map.bin' and a short riddle:",
+      "\"I speak in ones and zeros, but I say hello — convert my waves to letters to move forward.\""
+    ],
+    choices:[
+      { t:"Download the attachment", a:"download_bin" },
+      { t:"Ignore and search desk", a:"desk" },
+      { t:"Reply 'Who dis?'", a:"reply" }
+    ]
+  },
+
+  download_bin: {
+    text:[
+      "You open 'cascade_map.bin'. It's a tiny sequence: 01001000 01001001",
+      "Binary! You recall that 01001000 = H and 01001001 = I."
+    ],
+    onEnter(){
+      addInventory("Binary Decoder", "frag_hi");
+      addLog("You gained tool: Binary Decoder — it showed fragment: <span class='frag'>\"sudo\"</span> (well, sort of).");
+      // Give one fragment
+      game.fragments["Binary Decoder"] = "sudo_";
+      game.codeFragmentsCollected++;
+    },
+    choices:[
+      { t:"Go back", a:"open_email" },
+      { t:"Search desk", a:"desk" }
+    ]
+  },
+
+  reply:{
+    text:[
+      "You type 'Who dis?'. The email auto-replies with a short poem: 'When music stored on tape must be read, a loop will tell the way ahead.'",
+      "You remember your old cassette player on the shelf."
+    ],
+    choices:[
+      { t:"Check shelf", a:"shelf" },
+      { t:"Open attachment", a:"download_bin" }
+    ]
+  },
+
+  slack:{
+    text:[
+      "Slack is full of GIFs and a pinned message from HR about ergonomic chairs. But a DM from 'glitchy-bot' reads: 'Want a hint? Look where floppy and modern meet.'"
+    ],
+    choices:[
+      { t:"Check the shelf", a:"shelf" },
+      { t:"Check the server room", a:"server" }
+    ]
+  },
+
+  desk:{
+    text:[
+      "On your desk: a mug that says 'I <3 ASSEMBLY', a suspicious floppy disk labeled 'PATCH.1989', and a rubber duck.",
+      "The duck quacks when you pick it up. Strange."
+    ],
+    choices:[
+      { t:"Insert the floppy into the mystery drive (who even has a drive?)", a:"floppy" },
+      { t:"Speak to the rubber duck", a:"duck" },
+      { t:"Go to the shelf", a:"shelf" }
+    ]
+  },
+
+  floppy:{
+    text:[
+      "You find an ancient USB-floppy emulator and slot the disk. A little pixelated menu appears: it prints 'fragment: save_the_' on the screen.",
+    ],
+    onEnter(){
+      addInventory("Floppy Patch", "frag_save");
+      game.fragments["Floppy Patch"] = "save_the_";
+      game.codeFragmentsCollected++;
+      addLog("You got fragment: <span class='frag'>\"save_the_\"</span>");
+    },
+    choices:[
+      { t:"Back to desk", a:"desk" },
+      { t:"Open email", a:"open_email" }
+    ]
+  },
+
+  duck:{
+    text:[
+      "The duck whispers: 'I'm more helpful than most managers.' Under its wing is a sticky note with a QR-like pattern. It reads: 'AI -> ask politely.'"
+    ],
+    choices:[
+      { t:"Invoke 'NeonNet' AI (a web panel on your browser)", a:"ai" },
+      { t:"Ignore and go shelf", a:"shelf" }
+    ]
+  },
+
+  ai:{
+    text:[
+      "A window of NeonNet (a playful assistant) opens. It asks one question: 'What is the programming language of the internet's heart?'",
+    ],
+    choices:[
+      { t:"Answer: JavaScript", a:"ai_answer_js" },
+      { t:"Answer: BASIC (throwback)", a:"ai_answer_basic" },
+      { t:"Answer: Assembly (I have the mug)", a:"ai_answer_asm" }
+    ]
+  },
+
+  ai_answer_js:{
+    text:[
+      "NeonNet chuckles: 'Modern, pragmatic. Take this token: _internet();'",
+    ],
+    onEnter(){
+      addInventory("NeonNet Token", "frag_internet");
+      game.fragments["NeonNet Token"] = "internet();";
+      game.codeFragmentsCollected++;
+      addLog("NeonNet gave you fragment: <span class='frag'>\"internet();\"</span>");
+    },
+    choices:[
+      { t:"Return to desk", a:"desk" },
+      { t:"Go to server room", a:"server" }
+    ]
+  },
+
+  ai_answer_basic:{
+    text:[
+      "NeonNet sighs. 'Cute. But no. Here's a consolation prize: a sticker.' It's decorative but not helpful."
+    ],
+    choices:[
+      { t:"Back", a:"desk" }
+    ]
+  },
+
+  ai_answer_asm:{
+    text:[
+      "NeonNet respects your assembly bias and gives you an ASCII slip: 'fragment: _the_' (nice!)."
+    ],
+    onEnter(){
+      addInventory("ASM Slip", "frag_the");
+      game.fragments["ASM Slip"] = "the_";
+      game.codeFragmentsCollected++;
+      addLog("You found fragment: <span class='frag'>\"the_\"</span>");
+    },
+    choices:[
+      { t:"Back", a:"desk" }
+    ]
+  },
+
+  shelf:{
+    text:[
+      "The shelf holds retro hardware: a joystick, a stack of BBS zines, and a vintage dev toolkit box labeled 'Debugger Deluxe'.",
+      "An envelope reads: 'Solve my riddle: I'm taken from the present but used in the past; put me by the debugger and you'll have the last.'"
+    ],
+    choices:[
+      { t:"Open the Debugger Deluxe", a:"debugger" },
+      { t:"Read BBS zines", a:"bbs" },
+      { t:"Return to desk", a:"desk" }
+    ]
+  },
+
+  debugger:{
+    text:[
+      "Inside the Debugger Deluxe is a slip with a simple crossword clue: 'a synonym for "rescue" (4 letters)'.",
+    ],
+    choices:[
+      { t:"Type 'SAVE' into the crossword", a:"fill_save" },
+      { t:"Type 'HELP'", a:"fill_help" },
+      { t:"Go back", a:"shelf" }
+    ]
+  },
+
+  fill_save:{
+    text:[
+      "You fill SAVE. The debugger beeps, and a tiny LED flashes. A hidden compartment opens with a gleaming fragment: 'the_internet'.",
+    ],
+    onEnter(){
+      addInventory("Debugger Fragment", "frag_theinternet");
+      game.fragments["Debugger Fragment"] = "the_internet";
+      game.codeFragmentsCollected++;
+      addLog("You gained fragment: <span class='frag'>\"the_internet\"</span>");
+    },
+    choices:[
+      { t:"Back to shelf", a:"shelf" },
+      { t:"Try server room", a:"server" }
+    ]
+  },
+
+  fill_help:{
+    text:[
+      "You try 'HELP' but the debugger only prints '404: sassy_response_not_found' and nothing happens."
+    ],
+    choices:[
+      { t:"Try SAVE", a:"fill_save" },
+      { t:"Back", a:"shelf" }
+    ]
+  },
+
+  bbs:{
+    text:[
+      "Old BBS zines have marginalia: someone scribbled a piece of a code: 'sudo_' (but it's smudged). You already have that from Binary Decoder. Nice redundancy."
+    ],
+    choices:[
+      { t:"Back", a:"shelf" }
+    ]
+  },
+
+  server:{
+    text:[
+      "The server room hums. Racks glow like a cathedral of LEDs. On a console is a tiny notepad: 'Patch Assembly Terminal. Enter final code to patch cascade.'",
+      "You need the code fragments to be able to patch."
+    ],
+    choices:[
+      { t:"Open the patch terminal", a:"terminal_scene" },
+      { t:"Return to desk", a:"desk" }
+    ]
+  },
+
+  terminal_scene:{
+    text:[
+      "The terminal waits. There's a prompt: 'Assemble and RUN to stop cascade.'",
+      "You can type the code in the terminal box at right. Or check your inventory for fragments."
+    ],
+    choices:[
+      { t:"Open inventory", a:"open_inventory" },
+      { t:"Run terminal input", a:"run_input" },
+      { t:"Return", a:"server" }
+    ]
+  },
+
+  victory:{
+    text:[
+      "You type the code. The terminal glows, NeonNet hums like an 80s synth, and your patch propagates across routers and BBSs.",
+      "The cascade dissipates like static. You saved the internet. The rubber duck applauds. A message appears: 'Thanks, Devon. World saved. Pizza on me.'"
+    ],
+    onEnter(){
+      addLog("<strong style='color:var(--accent)'>✅ NETWORK STABLE — PATCH APPLIED</strong>");
+      addLog("<em style='color:var(--muted)'>You did it. You saved the internet with a mix of retro tape, floppy courage, and AI sass.</em>");
+    },
+    choices:[
+      { t:"Play again", a:"reset" }
+    ]
+  },
+
+  failure:{
+    text:[
+      "The code fizzles. The terminal mocks you with ASCII faces. 'Patch incomplete. Try collecting the required fragments: sudo_, save_the_, the_, internet();'",
+      "It looks like pieces are missing."
+    ],
+    choices:[
+      { t:"Open inventory", a:"open_inventory" },
+      { t:"Explore more", a:"desk" }
+    ]
+  },
+
+  reset:{
+    text:[
+      "Resetting the world... (but keeping your sense of humor)."
+    ],
+    onEnter(){
+      resetGame();
+    },
+    choices:[
+      { t:"Start over", a:"start" }
+    ]
+  }
+};
+
+/* DOM helpers */
+const logEl = document.getElementById('log');
+const choicesEl = document.getElementById('choices');
+const invEl = document.getElementById('inventory');
+const termInput = document.getElementById('terminalInput');
+const runBtn = document.getElementById('runBtn');
+const termMsg = document.getElementById('termMsg');
+
+function addLog(text){
+  const p = document.createElement('div');
+  p.innerHTML = text;
+  logEl.appendChild(p);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function clearChoices(){ choicesEl.innerHTML = ''; }
+
+function showScene(key){
+  const scene = scenes[key];
+  if(!scene) return;
+  game.scene = key;
+  // show text
+  scene.text.forEach(line => addLog(line));
+  // run onEnter if exists
+  if(scene.onEnter) scene.onEnter();
+  // show choices
+  clearChoices();
+  scene.choices.forEach(ch => {
+    const b = document.createElement('button');
+    b.className = 'choice';
+    b.innerText = ch.t;
+    b.onclick = ()=> showScene(ch.a);
+    choicesEl.appendChild(b);
+  });
+  updateInventoryUI();
+}
+
+/* Inventory & fragments */
+function addInventory(name, id){
+  if(game.inventory.some(i=>i.id===id)) return;
+  game.inventory.push({name,id});
+  updateInventoryUI();
+}
+
+function updateInventoryUI(){
+  invEl.innerHTML = '';
+  if(game.inventory.length===0){
+    invEl.innerHTML = '<div class="item"><div class="icon">—</div><div style="flex:1">No tools yet</div></div>';
+    return;
+  }
+  game.inventory.forEach(i=>{
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = `<div class="icon">⚙</div><div style="flex:1">
+      <strong style="color:var(--accent)">${i.name}</strong>
+      <div style="font-size:12px;color:var(--muted)">${game.fragments[i.name] ? 'Fragment: ' + "<span class='frag'>"+escapeHtml(game.fragments[i.name])+"</span>" : ''}</div>
+    </div>`;
+    invEl.appendChild(div);
+  });
+}
+
+/* Terminal run */
+runBtn.addEventListener('click', runTerminal);
+termInput.addEventListener('keydown', (e)=> {
+  if(e.key==='Enter') runTerminal();
+  handleKonamiKey(e);
+});
+
+function runTerminal(){
+  const txt = termInput.value.trim();
+  if(!txt){
+    termMsg.innerText = "Enter something — nothing happens.";
+    return;
+  }
+  addLog(`<div style="color:#9fb4c8">> ${escapeHtml(txt)}</div>`);
+  // check if equals final
+  if(txt === FINAL_CODE){
+    showScene('victory');
+    termMsg.innerText = "Patch applied.";
+    return;
+  }
+  // check if the player has all fragments needed
+  const req = ["sudo_","save_the_","the_","internet();"];
+  const have = Object.values(game.fragments);
+  const all = req.every(r=> have.includes(r));
+  if(all && txt === (game.fragments["Binary Decoder"] || "sudo_") + game.fragments["Floppy Patch"] + (game.fragments["ASM Slip"] || game.fragments["Debugger Fragment"] ? (game.fragments["ASM Slip"]||"the_") : "") + (game.fragments["NeonNet Token"] || "internet();")){
+    // sometimes duplicate names, but if constructed correctly allow success
+    showScene('victory');
+    termMsg.innerText = "Patch applied.";
+  } else {
+    showScene('failure');
+    termMsg.innerText = "Patch failed. Fragments missing or incorrect.";
+  }
+}
+
+/* Utility functions */
+function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function resetGame(){
+  game.scene = 'start';
+  game.inventory = [];
+  game.fragments = {};
+  game.codeFragmentsCollected = 0;
+  logEl.innerHTML = '';
+  termInput.value = '';
+  termMsg.innerText = '';
+  showScene('start');
+}
+
+/* Small Konami easter egg */
+const konami = [38,38,40,40,37,39,37,39];
+function handleKonamiKey(e){
+  if(e.keyCode === konami[game.konamiProgress]) {
+    game.konamiProgress++;
+    if(game.konamiProgress === konami.length){
+      addLog("<div style='color:var(--neon)'>✨ KONAMI EASTER EGG: You've unlocked 'Turbo Floppy Mode' — play faster, wear neon leg warmers.</div>");
+      game.konamiProgress = 0;
+    }
+  } else {
+    game.konamiProgress = 0;
+  }
+}
+
+/* Start the game */
+resetGame();
+
+/* Small UX: clicking inventory opens fragments */
+document.getElementById('inventory').addEventListener('click', ()=> {
+  if(game.inventory.length===0) addLog("You have no tools yet — try exploring the desk and shelf.");
+  else {
+    addLog("Inventory fragments:");
+    Object.entries(game.fragments).forEach(([k,v])=>{
+      addLog(`<div style="color:var(--muted)">${escapeHtml(k)} → <span class='frag'>${escapeHtml(v)}</span></div>`);
+    });
+  }
+});
+
+/* helpful hint if user types partial correct code */
+termInput.addEventListener('input', ()=>{
+  const v = termInput.value;
+  if(FINAL_CODE.startsWith(v)) termMsg.innerText = "Looks promising...";
+  else if(v.length>0) termMsg.innerText = "";
+});
+</script>
+</body>
+</html>
