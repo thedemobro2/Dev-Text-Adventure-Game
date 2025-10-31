@@ -50,7 +50,6 @@
   .scanlines{position:relative}
   .scanlines:after{content:"";position:absolute;top:0;left:0;right:0;bottom:0;background-image:linear-gradient(rgba(0,0,0,0.02) 50%, transparent 50%);background-size:100% 4px;pointer-events:none;border-radius:6px}
   
-  /* --- NEW: Command Key Styles --- */
   .command-key {
       background: rgba(0,0,0,0.3); /* slightly different from terminal */
   }
@@ -81,7 +80,7 @@
 <div class="wrap">
   <header>
     <div>
-      <div class="neonTitle">Save the Net — v0.9 • fixed edition</div>
+      <div class="neonTitle">Save the Net — v1.0 • Bugfix Edition</div>
       <h1>Inbox Panic at 09:13</h1>
       <div class="subtitle">A tiny text adventure — 80s neon, floppy nostalgia, & modern AI shenanigans</div>
     </div>
@@ -138,7 +137,6 @@ const game = {
 /* Final code to save the internet — keep simple & memorable */
 const FINAL_CODE = "sudo_save_the_internet();";
 
-/* --- FIX: Konami array uses modern e.key strings --- */
 const konami = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight'];
 
 /* Scenes */
@@ -392,7 +390,6 @@ const scenes = {
     ]
   },
 
-  /* --- FIX: Updated failure scene text --- */
   failure:{
     text:[
       "The code fizzles. The terminal mocks you with ASCII faces. 'Patch incomplete.'",
@@ -425,6 +422,34 @@ const termInput = document.getElementById('terminalInput');
 const runBtn = document.getElementById('runBtn');
 const termMsg = document.getElementById('termMsg');
 
+
+/* --- NEW: handleChoice function to route player clicks --- */
+function handleChoice(action) {
+  if (scenes[action]) {
+    // It's a scene key, navigate
+    showScene(action);
+  } else {
+    // It's an action key
+    switch (action) {
+      case 'run_input':
+        runTerminal();
+        break;
+      case 'open_inventory':
+        // Manually trigger the log display for inventory
+        if(game.inventory.length===0) {
+          addLog("You have no tools yet — try exploring the desk and shelf.");
+        } else {
+          addLog("Inventory fragments:");
+          Object.entries(game.fragments).forEach(([k,v])=>{
+            addLog(`<div style="color:var(--muted)">${escapeHtml(k)} → <span class='frag'>${escapeHtml(v)}</span></div>`);
+          });
+        }
+        break;
+      // Add other future actions here
+    }
+  }
+}
+
 function addLog(text){
   const p = document.createElement('div');
   p.innerHTML = text;
@@ -448,7 +473,8 @@ function showScene(key){
     const b = document.createElement('button');
     b.className = 'choice';
     b.innerText = ch.t;
-    b.onclick = ()=> showScene(ch.a);
+    /* --- FIX: Use the new handleChoice function --- */
+    b.onclick = ()=> handleChoice(ch.a);
     choicesEl.appendChild(b);
   });
   updateInventoryUI();
@@ -485,7 +511,6 @@ termInput.addEventListener('keydown', (e)=> {
   handleKonamiKey(e);
 });
 
-/* --- FIX: Simplified runTerminal function --- */
 function runTerminal(){
   const txt = termInput.value.trim();
   if(!txt){
@@ -521,9 +546,8 @@ function resetGame(){
   showScene('start');
 }
 
-/* --- FIX: Updated Konami easter egg logic --- */
 function handleKonamiKey(e){
-  if(e.key === konami[game.konamiProgress]) { // Use e.key
+  if(e.key === konami[game.konamiProgress]) {
     game.konamiProgress++;
     if(game.konamiProgress === konami.length){
       addLog("<div style='color:var(--neon)'>✨ KONAMI EASTER EGG: You've unlocked 'Turbo Floppy Mode' — play faster, wear neon leg warmers.</div>");
