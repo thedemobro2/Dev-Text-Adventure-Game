@@ -3,616 +3,1062 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Save the Net — A Retro Dev Text Adventure</title>
+<title>Save the Net — Vintage Ops Edition</title>
 <style>
   :root{
-    --bg:#071126;
-    --panel:#071b2b;
-    --accent:#39ff14;
-    --neon:#ff48c4;
-    --muted:#9fb4c8;
-    --glass: rgba(255,255,255,0.03);
-    --crt: rgba(0,0,0,0.12);
-    font-family: "VT323", "Courier New", monospace;
+    --bg:#0b0f12;
+    --paper:#cfc7b4;     /* beige */
+    --paper2:#bfb8a7;
+    --ink:#1b1e22;
+    --muted:#3b3f46;
+    --accent:#0a7a2a;    /* dark green */
+    --danger:#a11e1e;
+    --shadow: rgba(0,0,0,0.55);
+    --glow: rgba(24,255,122,0.15);
+
+    font-family: "MS Sans Serif","Tahoma","Verdana",system-ui,sans-serif;
+    font-size: 12px;
   }
-  html,body{height:100%;margin:0;background:
-    radial-gradient(1200px 600px at 10% 10%, rgba(63,12,121,0.12), transparent 10%),
-    linear-gradient(180deg,#021024 0%, #071126 45%, #02040b 100%);color:#dbefff;}
-  .wrap{max-width:980px;margin:24px auto;padding:18px;border-radius:12px;
-        background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12));
-        box-shadow: 0 10px 30px rgba(2,6,23,0.7), inset 0 1px 0 rgba(255,255,255,0.02);}
-  header{display:flex;gap:12px;align-items:center}
-  h1{margin:0;font-size:20px;color:var(--accent);text-shadow:0 0 8px rgba(57,255,20,0.15)}
-  .subtitle{color:var(--muted);font-size:12px}
-  main{display:grid;grid-template-columns: 1fr 320px; gap:16px;margin-top:16px}
-  .game{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.08));
-        padding:16px;border-radius:8px;min-height:460px;box-shadow: inset 0 0 40px var(--crt);}
-  .log{height:460px;overflow:auto;padding:10px;border-radius:6px;background:linear-gradient(180deg, rgba(0,0,0,0.05), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.02)}
-  .side{background:#030b12;padding:12px;border-radius:8px;min-height:460px}
-  .inventory{display:flex;flex-direction:column;gap:8px}
-  .item{display:flex;align-items:center;gap:8px;padding:6px;background:rgba(255,255,255,0.02);border-radius:6px;border:1px dashed rgba(255,255,255,0.02)}
-  .frag{color:var(--neon);font-weight:700}
-  .terminal{margin-top:12px;padding:10px;background:#000;border-radius:6px;border:1px solid rgba(255,255,255,0.03)}
-  input[type=text]{width:100%;padding:8px;border-radius:4px;border:1px solid rgba(255,255,255,0.06);background:#08121a;color:#dfeffb;font-family:inherit}
-  .btn{display:inline-block;margin-top:8px;padding:8px 10px;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--neon));color:#02101a;font-weight:700;border:none;cursor:pointer}
-  footer{margin-top:12px;color:var(--muted);font-size:12px;text-align:center}
-  .neonTitle{font-family: 'Courier New', monospace; font-size:12px; letter-spacing:1.2px; color:var(--neon); text-shadow:0 0 8px rgba(255,72,196,0.14)}
-  .icon{width:28px;height:28px;border-radius:4px;display:inline-grid;place-items:center;font-size:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03)}
-  .scanlines{position:relative}
-  .scanlines:after{content:"";position:absolute;top:0;left:0;right:0;bottom:0;background-image:linear-gradient(rgba(0,0,0,0.02) 50%, transparent 50%);background-size:100% 4px;pointer-events:none;border-radius:6px}
-  .pill{display:inline-block;padding:2px 6px;border-radius:999px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:var(--muted);font-size:12px}
-  @media(max-width:920px){main{grid-template-columns:1fr;}}
+
+  html,body{
+    height:100%;
+    margin:0;
+    background:
+      radial-gradient(800px 400px at 20% 10%, rgba(255,255,255,0.04), transparent 55%),
+      radial-gradient(700px 450px at 80% 20%, rgba(24,255,122,0.04), transparent 60%),
+      linear-gradient(180deg,#0b0f12 0%, #07090b 100%);
+    color:#e9efe6;
+    user-select:none;
+    overflow:hidden;
+  }
+
+  .wrap{
+    max-width: 1024px;
+    margin: 18px auto;
+    padding: 10px;
+  }
+
+  /* Window chrome */
+  .window{
+    border: 2px solid #2a2f36;
+    border-radius: 8px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.25));
+    box-shadow: 0 20px 45px var(--shadow);
+    overflow:hidden;
+  }
+  .titlebar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 8px 10px;
+    background: linear-gradient(180deg, #2f3a45, #202830);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    color:#d7e4d9;
+    letter-spacing:0.4px;
+  }
+  .titlebar .left{
+    display:flex; align-items:center; gap:8px;
+    font-weight:700;
+  }
+  .lamp{
+    width:10px;height:10px;border-radius:2px;
+    background: #1aff7a;
+    box-shadow: 0 0 10px var(--glow);
+  }
+  .controls{
+    display:flex; gap:6px;
+  }
+  .ctrl{
+    width: 12px; height: 12px;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+  }
+
+  .content{
+    display:grid;
+    grid-template-columns: 1fr 340px;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  @media(max-width: 980px){
+    body{ overflow:auto; }
+    .content{ grid-template-columns: 1fr; }
+  }
+
+  /* Game panel looks like old terminal window inside */
+  .game{
+    background: linear-gradient(180deg, rgba(207,199,180,0.06), rgba(0,0,0,0.25));
+    border: 2px solid rgba(207,199,180,0.18);
+    border-radius: 8px;
+    padding: 10px;
+    position:relative;
+  }
+
+  .crt{
+    background: radial-gradient(1000px 600px at 50% 30%, rgba(24,255,122,0.06), transparent 55%),
+                linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.25));
+    border: 2px solid rgba(0,0,0,0.35);
+    border-radius: 6px;
+    height: 520px;
+    overflow:auto;
+    padding: 10px;
+    color: #d7f7df;
+    text-shadow: 0 0 8px rgba(24,255,122,0.08);
+    font-family: "VT323","Courier New",monospace;
+    font-size: 18px;
+    line-height: 1.15;
+    position:relative;
+  }
+
+  /* Scanlines + flicker */
+  .crt:before{
+    content:"";
+    position:absolute; inset:0;
+    background-image: linear-gradient(rgba(0,0,0,0.08) 50%, transparent 50%);
+    background-size: 100% 4px;
+    pointer-events:none;
+    mix-blend-mode: multiply;
+    opacity:0.35;
+  }
+  .crt:after{
+    content:"";
+    position:absolute; inset:-2px;
+    border-radius: 6px;
+    box-shadow: inset 0 0 55px rgba(0,0,0,0.6);
+    pointer-events:none;
+  }
+  @keyframes flicker{
+    0%{ opacity: 0.98; }
+    50%{ opacity: 1; }
+    100%{ opacity: 0.985; }
+  }
+  .crt{
+    animation: flicker 2.2s infinite;
+  }
+
+  .side{
+    background: linear-gradient(180deg, rgba(207,199,180,0.07), rgba(0,0,0,0.25));
+    border: 2px solid rgba(207,199,180,0.18);
+    border-radius: 8px;
+    padding: 10px;
+  }
+
+  .sectionTitle{
+    display:flex;justify-content:space-between;align-items:center;
+    color:#f0ecd9;
+    font-weight:700;
+    margin-bottom: 6px;
+    text-transform:uppercase;
+    letter-spacing:0.6px;
+    font-size: 11px;
+    opacity:0.95;
+  }
+
+  .pill{
+    font-family: "MS Sans Serif","Tahoma",sans-serif;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(207,199,180,0.35);
+    background: rgba(0,0,0,0.25);
+    color:#f0ecd9;
+  }
+
+  .inventory{display:flex;flex-direction:column;gap:8px; margin-bottom: 10px;}
+  .item{
+    display:flex; gap:8px; align-items:flex-start;
+    padding: 8px;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.22);
+    border: 1px dashed rgba(207,199,180,0.25);
+    color:#f0ecd9;
+  }
+  .icon{
+    width: 28px; height: 28px;
+    border-radius: 4px;
+    display:grid; place-items:center;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(207,199,180,0.22);
+    font-weight: 800;
+  }
+
+  .frag{ color: #1aff7a; font-weight: 700; text-shadow: 0 0 8px rgba(24,255,122,0.14); }
+  .muted{ color: rgba(240,236,217,0.75); }
+
+  .terminal{
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(0,0,0,0.55);
+    border: 1px solid rgba(207,199,180,0.25);
+    border-radius: 6px;
+  }
+  input[type=text]{
+    width:100%;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid rgba(207,199,180,0.35);
+    background: rgba(10,12,14,0.75);
+    color: #f7f5e8;
+    font-family: "VT323","Courier New",monospace;
+    font-size: 18px;
+    outline:none;
+  }
+  .btnRow{ display:flex; gap:8px; margin-top:8px; }
+  .btn{
+    flex:1;
+    padding: 10px;
+    border-radius: 6px;
+    cursor:pointer;
+    border: 1px solid rgba(207,199,180,0.35);
+    background: linear-gradient(180deg, rgba(207,199,180,0.25), rgba(0,0,0,0.35));
+    color:#f0ecd9;
+    font-weight:700;
+    letter-spacing:0.3px;
+  }
+  .btn:active{ transform: translateY(1px); }
+
+  .hint{
+    margin-top: 6px;
+    font-size: 12px;
+    color: rgba(240,236,217,0.75);
+    min-height: 16px;
+  }
+
+  .footer{
+    margin-top: 10px;
+    text-align:center;
+    color: rgba(240,236,217,0.65);
+    font-size: 12px;
+  }
+
+  .kbd{
+    font-family: "MS Sans Serif","Tahoma",sans-serif;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(207,199,180,0.3);
+    background: rgba(0,0,0,0.35);
+    color: rgba(240,236,217,0.9);
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div>
-      <div class="neonTitle">Save the Net — v2.2 • Patch Assembler Edition</div>
-      <h1>Inbox Panic at 09:13</h1>
-      <div class="subtitle">A tiny text adventure — 80s neon, floppy nostalgia, & modern AI shenanigans</div>
+  <div class="window">
+    <div class="titlebar">
+      <div class="left">
+        <div class="lamp"></div>
+        <div>Save the Net | Vintage Ops Edition</div>
+        <div class="pill" id="roomPill">Room: START</div>
+      </div>
+      <div class="controls">
+        <div class="ctrl"></div><div class="ctrl"></div><div class="ctrl"></div>
+      </div>
     </div>
-  </header>
 
-  <main>
-    <section class="game">
-      <div id="log" class="log scanlines" aria-live="polite"></div>
-    </section>
+    <div class="content">
+      <section class="game">
+        <div id="log" class="crt" aria-live="polite"></div>
+        <div class="footer">Tip: <span class="kbd">help</span>, <span class="kbd">map</span>, <span class="kbd">notes</span>, <span class="kbd">assemble</span></div>
+      </section>
 
-    <aside class="side">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <h3 style="margin:0;color:var(--accent)">Inventory</h3>
-        <div id="status" class="pill">Fragments: 0/3</div>
-      </div>
-      <div id="inventory" class="inventory" style="margin-top:8px">
-        <div class="item"><div class="icon">—</div><div style="flex:1">No tools yet</div></div>
-      </div>
+      <aside class="side">
+        <div class="sectionTitle">
+          <div>Inventory</div>
+          <div class="pill" id="status">Fragments: 0/5</div>
+        </div>
+        <div id="inventory" class="inventory">
+          <div class="item"><div class="icon">—</div><div style="flex:1">No tools yet</div></div>
+        </div>
 
-      <div class="terminal">
-        <div style="font-size:13px;color:var(--muted)">Terminal (Type <span class="frag">help</span>)</div>
-        <input id="terminalInput" type="text" placeholder='Type command (e.g., open email)' />
-        <button id="runBtn" class="btn">RUN</button>
-        <div id="termMsg" style="margin-top:6px;font-size:13px;color:var(--muted)"></div>
-      </div>
+        <div class="sectionTitle"><div>Terminal</div><div class="pill">Type <span class="kbd">help</span></div></div>
+        <div class="terminal">
+          <input id="terminalInput" type="text" placeholder="open email" autocomplete="off" />
+          <div class="btnRow">
+            <button id="runBtn" class="btn">RUN</button>
+            <button id="clearBtn" class="btn">CLEAR</button>
+          </div>
+          <div id="termMsg" class="hint"></div>
+        </div>
 
-      <div style="margin-top:12px;color:var(--muted);font-size:12px">Secrets: Konami ↑↑↓↓←→←→ (on keyboard)</div>
-    </aside>
-  </main>
-
-  <footer>Made with +1 floppy, +2 coffee, and one suspicious AI named 'NeonNet'</footer>
+        <div class="sectionTitle" style="margin-top:10px"><div>Secret</div><div class="pill">Konami</div></div>
+        <div class="muted">↑↑↓↓←→←→ unlocks… something questionable.</div>
+      </aside>
+    </div>
+  </div>
 </div>
 
 <script>
 /* ---------------------------
-   Game state
+   Core state
 ----------------------------*/
 const game = {
-  currentLocation: 'start',
+  room: 'start',
   inventory: [],
-  fragments: {},            // key -> fragment text
-  obtainedFlags: {},        // one-time rewards
+  fragments: {},        // fragmentKey -> text
+  obtained: {},         // one-time flags
+  notes: [],
+  knownRooms: new Set(['start']),
   konamiProgress: 0
 };
 
-/* We now build a REAL final code from fragments */
-const REQUIRED_FRAG_KEYS = ['sudo', 'save_the', 'internet'];
-function assembledPatch(){
-  // Assemble in stable order so the player can learn it
-  const s = (game.fragments.sudo || '') + (game.fragments.save_the || '') + (game.fragments.internet || '');
-  return s;
-}
-function normalize(s){ return (s || '').trim().toLowerCase(); }
+const REQUIRED_FRAGS = ['sudo','save_the','net','pipe','commit']; // 5 pieces now
 
-/* Konami */
+function normalize(s){ return (s||'').trim().toLowerCase(); }
+function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* Patch is now a proper little chain */
+function assembledPatch(){
+  const sudo = game.fragments.sudo || '';
+  const save = game.fragments.save_the || '';
+  const net  = game.fragments.net || '';
+  const pipe = game.fragments.pipe || '';
+  const com  = game.fragments.commit || '';
+  // fun final form
+  return `${sudo}${save}${net}${pipe}${com}`; // results in: sudo_save_the_net|commit();
+}
+function isComplete(){ return REQUIRED_FRAGS.every(k => (game.fragments[k]||'').length>0); }
+function haveCount(){ return REQUIRED_FRAGS.filter(k => (game.fragments[k]||'').length>0).length; }
+function missingCount(){ return REQUIRED_FRAGS.filter(k => !(game.fragments[k]||'').length).length; }
+
 const konami = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight'];
 
 /* ---------------------------
-   Scenes
+   World map (rooms + exits)
 ----------------------------*/
-const scenes = {
-  start: {
-    text: [
-      "You are Devon (a mild-mannered developer), hunched over a humming CRT at 09:13 on a Tuesday.",
-      "An email pings: SUBJECT: ⚠️ 'SYSTEM: Critical network cascade detected' — sender: unknown@neonnet.ai",
-      "It says: 'Find the tools, assemble the patch, and run the code to stop the cascade.'",
-      "You are at your <span class='frag'>desk</span>. Try: <span class='frag'>look desk</span> or <span class='frag'>open email</span>."
-    ]
-  },
-  open_email: {
-    text:[
-      "The email is dramatic. It includes an attachment <span class='frag'>cascade_map.bin</span> and a short riddle:",
-      "\"I speak in ones and zeros, but I say hello — convert my waves to letters to move forward.\"",
-      "You can <span class='frag'>download attachment</span> or <span class='frag'>reply</span>."
-    ]
-  },
-  download_bin: {
-    text:[
-      "You open 'cascade_map.bin'. It's a tiny sequence: 01001000 01001001",
-      "Binary! You recall that 01001000 = H and 01001001 = I.",
-      "Behind the HI is a hidden admin note: <span class='frag'>sudo</span> (because of course)."
-    ],
-    onEnter(){
-      grantOnce('got_sudo', ()=>{
-        addInventory("Binary Decoder", "tool_binary");
-        game.fragments.sudo = "sudo_";
-        addLog("You gained tool: Binary Decoder → fragment: <span class='frag'>sudo_</span>");
-      });
-    }
-  },
-  reply:{
-    text:[
-      "You type 'Who dis?'. The email auto-replies with a short poem:",
-      "'When music stored on tape must be read, a loop will tell the way ahead.'",
-      "You remember your old cassette player on the <span class='frag'>shelf</span>.",
-      "Try: <span class='frag'>go shelf</span>."
-    ]
-  },
-  desk:{
-    text:[
-      "On your desk: a mug that says 'I <3 ASSEMBLY', a suspicious floppy disk labeled 'PATCH.1989', and a rubber duck.",
-      "You can <span class='frag'>use floppy</span>, <span class='frag'>talk to duck</span>, or <span class='frag'>go shelf</span>."
-    ]
-  },
-  floppy:{
-    text:[
-      "You find an ancient USB-floppy emulator and slot the disk.",
-      "A pixelated menu appears and prints: fragment <span class='frag'>save_the_</span>."
-    ],
-    onEnter(){
-      grantOnce('got_save_the', ()=>{
-        addInventory("Floppy Patch", "tool_floppy");
-        game.fragments.save_the = "save_the_";
-        addLog("You got fragment: <span class='frag'>save_the_</span>");
-      });
-    }
-  },
-  duck:{
-    text:[
-      "The duck whispers: 'I'm more helpful than most managers.'",
-      "Under its wing is a sticky note: 'AI -> ask politely.'",
-      "You can <span class='frag'>use ai</span>."
-    ]
-  },
-  ai:{
-    text:[
-      "A window of NeonNet opens. It asks one question:",
-      "<span class='frag'>What is the programming language of the internet's heart?</span>",
-      "Answer: <span class='frag'>javascript</span>, <span class='frag'>basic</span>, or <span class='frag'>assembly</span>."
-    ]
-  },
-  ai_answer_js:{
-    text:[
-      "NeonNet chuckles: 'Modern, pragmatic. Take this token.'",
-      "It coughs up a final fragment: <span class='frag'>internet();</span>"
-    ],
-    onEnter(){
-      grantOnce('got_internet', ()=>{
-        addInventory("NeonNet Token", "tool_neonnet");
-        game.fragments.internet = "internet();";
-        addLog("NeonNet gave you fragment: <span class='frag'>internet();</span>");
-      });
-    }
-  },
-  ai_answer_basic:{
-    text:[
-      "NeonNet sighs. 'Cute. But no.'",
-      "It hands you a sticker that reads: 'I ♥ GOTO' (emotionally harmful, technically vintage)."
-    ]
-  },
-  ai_answer_asm:{
-    text:[
-      "NeonNet respects your assembly bias and grants you a wise nod.",
-      "It still wants you to answer the modern way for this mission though. (Try <span class='frag'>javascript</span>.)"
-    ]
-  },
-  shelf:{
-    text:[
-      "The shelf holds retro hardware: a joystick, a stack of BBS zines, and a vintage dev toolkit box labeled <span class='frag'>Debugger Deluxe</span>.",
-      "You can <span class='frag'>open debugger</span>, <span class='frag'>read zines</span>, or <span class='frag'>go server</span>."
-    ]
-  },
-  debugger:{
-    text:[
-      "Inside Debugger Deluxe is a slip with a clue:",
-      "'A synonym for rescue (4 letters)'.",
-      "Answer: <span class='frag'>save</span> or <span class='frag'>help</span>."
-    ]
-  },
-  fill_save:{
-    text:[
-      "You fill SAVE. The debugger beeps and a tiny LED flashes.",
-      "A compartment opens... but it's empty. Someone already looted it in 1997.",
-      "Still, the act of SAVE warms the universe by 0.3 degrees of optimism."
-    ]
-  },
-  fill_help:{
-    text:[
-      "You try 'HELP' but the debugger only prints: '404: sassy_response_not_found'."
-    ]
-  },
-  bbs:{
-    text:[
-      "Old BBS zines have marginalia: 'sudo_' (smudged), 'save_the_', and 'internet();'.",
-      "Whoever wrote this had the handwriting of a caffeinated spider."
-    ]
-  },
-  server:{
-    text:[
-      "The server room hums. Racks glow like a cathedral of LEDs.",
-      "On a console is a notepad: 'Patch Assembly Terminal. <span class='frag'>assemble</span> then <span class='frag'>run patch</span>.'",
-      "You can <span class='frag'>use terminal</span> here."
-    ]
-  },
-  terminal_scene:{
-    text:[
-      "The terminal waits. There's a prompt:",
-      "'Assemble and RUN to stop cascade.'",
-      "Try <span class='frag'>assemble</span> to see your patch, then <span class='frag'>run patch</span>.",
-      "Or manually type the full command if you know it."
-    ]
-  },
-  victory:{
-    text:[
-      "You run the patch. The terminal glows, NeonNet hums like an 80s synth, and your fix propagates across routers and dusty BBSs.",
-      "The cascade dissipates like static. You saved the internet.",
-      "The rubber duck applauds. A message appears: 'Thanks, Devon. World saved. Pizza on me.'"
-    ],
-    onEnter(){
-      addLog("<strong style='color:var(--accent)'>✅ NETWORK STABLE — PATCH APPLIED</strong>");
-    }
-  },
-  failure:{
-    text:[
-      "The code fizzles. The terminal mocks you with ASCII faces.",
-      "'Patch incomplete.'",
-      "Type <span class='frag'>assemble</span> to see what's missing, or <span class='frag'>inventory</span>."
-    ]
-  }
+const world = {
+  start: { name:"START", exits:['desk','hallway'], desc:[
+    "09:13. Your CRT warms your face like a tiny space heater with opinions.",
+    "An email pings: SUBJECT: <span class='frag'>CRITICAL network cascade</span> — sender: unknown@neonnet.ai",
+    "Try <span class='frag'>open email</span> or <span class='frag'>go desk</span>."
+  ]},
+  desk: { name:"DESK", exits:['hallway'], desc:[
+    "Your desk is a museum exhibit: floppy disks, a rubber duck, and a keyboard with three missing keys.",
+    "You see: <span class='frag'>floppy</span>, <span class='frag'>duck</span>, and a coffee mug reading 'SEGFAULT HAPPENS'.",
+    "Try <span class='frag'>use floppy</span> or <span class='frag'>talk duck</span>."
+  ]},
+  hallway: { name:"HALLWAY", exits:['desk','server','lab','breakroom','storage'], desc:[
+    "A dim hallway lit by exit signs and the glow of ancient monitors.",
+    "Doors: <span class='frag'>server room</span>, <span class='frag'>lab</span>, <span class='frag'>break room</span>, <span class='frag'>storage</span>.",
+    "Try <span class='frag'>map</span> or <span class='frag'>go server</span>."
+  ]},
+  server: { name:"SERVER ROOM", exits:['hallway','security'], desc:[
+    "The server room hums. Fans scream quietly into the void. LEDs blink in synchronized anxiety.",
+    "A console says: <span class='frag'>assemble</span> then <span class='frag'>run patch</span>.",
+    "There’s also a locked door labeled <span class='frag'>SECURITY</span>."
+  ]},
+  lab: { name:"LAB", exits:['hallway'], desc:[
+    "The lab smells like solder and ambition. A whiteboard reads: 'TODAY: make the impossible compile.'",
+    "Characters here: <span class='frag'>Marge</span> (sysadmin), <span class='frag'>Chip</span> (intern).",
+    "On the table: a cassette labeled <span class='frag'>LOOP.TAPE</span> and a sticky note with <span class='frag'>hex</span> scribbles."
+  ]},
+  breakroom: { name:"BREAK ROOM", exits:['hallway'], desc:[
+    "A break room with a vending machine from 1992 that only accepts exact existential dread.",
+    "A flyer: 'Password hygiene seminar'… with the password ironically printed in tiny text (but smudged).",
+    "There’s a bulletin board full of <span class='frag'>ROT13</span> nonsense."
+  ]},
+  storage: { name:"STORAGE", exits:['hallway'], desc:[
+    "Storage closet. Boxes. Cables. A spiderweb that looks like a network diagram.",
+    "You spot a badge lanyard: <span class='frag'>ACCESS CARD</span> (but it’s behind a logic puzzle panel)."
+  ]},
+  security: { name:"SECURITY OFFICE", exits:['server'], locked:true, desc:[
+    "Security Office. A beige terminal. A bot charging station labeled <span class='frag'>SENTRY-88</span>.",
+    "The terminal prompts: 'ENTER ADMIN VERB + CONFIRMATION'.",
+    "This room contains something important."
+  ]}
 };
+
+/* ---------------------------
+   Puzzles & items
+----------------------------*/
+const items = {
+  floppy: { name:"Floppy Patch", id:"tool_floppy", icon:"💾", gives:{key:'save_the', text:'save_the_'} },
+  binary: { name:"Binary Decoder", id:"tool_binary", icon:"🧮", gives:{key:'sudo', text:'sudo_'} },
+  ductape: { name:"Duct-Tape Cable", id:"tool_duct", icon:"🧷" },
+  accesscard: { name:"Access Card", id:"tool_card", icon:"🪪" }
+};
+
+/* Notes helper */
+function note(line){
+  game.notes.push(line);
+}
 
 /* ---------------------------
    DOM
 ----------------------------*/
-let logEl, invEl, termInput, runBtn, termMsg, statusEl;
+let logEl, invEl, inputEl, runBtn, clearBtn, termMsg, statusEl, roomPill;
 
-function showScene(key){
-  const scene = scenes[key];
-  if(!scene) { addLog(`<div style="color:var(--neon)">That doesn't make sense.</div>`); return; }
-  game.currentLocation = key;
-  scene.text.forEach(line => addLog(line));
-  if(scene.onEnter) scene.onEnter();
-  updateInventoryUI();
-  updateStatusUI();
-}
-
-function parseCommand(raw) {
-  const txt = normalize(raw);
-  if(!txt) return;
-
-  addLog(`<div style="color:var(--accent)">> ${escapeHtml(raw.trim())}</div>`);
-
-  // Win by typing exact final assembled patch (case-insensitive)
-  if (txt === normalize(assembledPatch()) && isPatchComplete()) {
-    showScene('victory');
-    return;
-  }
-
-  // Global commands
-  switch(txt) {
-    case 'help':
-      addLog("<div style='color:var(--muted)'>Commands:</div>");
-      addLog("<ul style='margin:6px 0 0 18px;color:var(--muted)'>" +
-        "<li><span class='frag'>look</span> (repeats current scene)</li>" +
-        "<li><span class='frag'>look desk</span>, <span class='frag'>go shelf</span>, <span class='frag'>go server</span></li>" +
-        "<li><span class='frag'>open email</span>, <span class='frag'>download attachment</span>, <span class='frag'>reply</span></li>" +
-        "<li><span class='frag'>use floppy</span>, <span class='frag'>talk to duck</span>, <span class='frag'>use ai</span></li>" +
-        "<li><span class='frag'>javascript</span> (answer NeonNet)</li>" +
-        "<li><span class='frag'>inventory</span> (or <span class='frag'>i</span>)</li>" +
-        "<li><span class='frag'>assemble</span> (shows patch)</li>" +
-        "<li><span class='frag'>run patch</span> (attempt to win)</li>" +
-        "<li><span class='frag'>reset</span> (restart)</li>" +
-      "</ul>");
-      return;
-
-    case 'inventory':
-    case 'i':
-      printInventory();
-      return;
-
-    case 'status':
-      updateStatusUI(true);
-      return;
-
-    case 'look':
-    case 'l':
-      // Don’t re-trigger onEnter rewards; just reprint the scene text
-      scenes[game.currentLocation].text.forEach(line => addLog(line));
-      return;
-
-    case 'assemble':
-      addLog("You lay out your fragments on the desk like pixel-art tarot cards:");
-      addLog(`<div style="color:var(--muted)">sudo → <span class='frag'>${escapeHtml(game.fragments.sudo || '(missing)')}</span></div>`);
-      addLog(`<div style="color:var(--muted)">save_the → <span class='frag'>${escapeHtml(game.fragments.save_the || '(missing)')}</span></div>`);
-      addLog(`<div style="color:var(--muted)">internet → <span class='frag'>${escapeHtml(game.fragments.internet || '(missing)')}</span></div>`);
-      addLog(`<div style="margin-top:6px">Assembled patch:</div>`);
-      addLog(`<div><span class='frag'>${escapeHtml(assembledPatch() || '(nothing yet)')}</span></div>`);
-      if(!isPatchComplete()) addLog(`<div style="color:var(--muted)">Missing ${missingFragmentCount()} fragment(s). Keep scavenging.</div>`);
-      return;
-
-    case 'run patch':
-    case 'run':
-      if (game.currentLocation !== 'terminal_scene') {
-        addLog("You wave your hands dramatically, but there's no terminal here. Try <span class='frag'>go server</span> then <span class='frag'>use terminal</span>.");
-        return;
-      }
-      if (!isPatchComplete()) { showScene('failure'); return; }
-      showScene('victory');
-      return;
-
-    case 'reset':
-      resetGame();
-      return;
-  }
-
-  // Location/context commands
-  const loc = game.currentLocation;
-
-  switch(txt) {
-    // navigation & basic interactions
-    case 'look desk':
-    case 'go desk':
-      showScene('desk'); break;
-
-    case 'open email':
-      showScene('open_email'); break;
-
-    case 'download attachment':
-    case 'download':
-      if (loc === 'open_email') showScene('download_bin');
-      else addLog("You don't see an attachment to download here. Try <span class='frag'>open email</span>.");
-      break;
-
-    case 'reply':
-      if (loc === 'open_email') showScene('reply');
-      else addLog("Reply to what, the void? Try <span class='frag'>open email</span> first.");
-      break;
-
-    case 'use floppy':
-    case 'insert floppy':
-      if (loc === 'desk') showScene('floppy');
-      else addLog("You need to be at your desk. Try <span class='frag'>go desk</span>.");
-      break;
-
-    case 'talk to duck':
-    case 'use duck':
-    case 'speak to duck':
-      if (loc === 'desk') showScene('duck');
-      else addLog("No duck in your current vicinity. Try <span class='frag'>go desk</span>.");
-      break;
-
-    case 'use ai':
-    case 'invoke ai':
-      if (loc === 'duck' || loc === 'ai') showScene('ai');
-      else addLog("You don't have a direct line to NeonNet from here. Try <span class='frag'>talk to duck</span>.");
-      break;
-
-    case 'javascript':
-    case 'answer javascript':
-      if (loc === 'ai') showScene('ai_answer_js');
-      else addLog("JavaScript echoes faintly in the distance. Find NeonNet first: <span class='frag'>use ai</span>.");
-      break;
-
-    case 'basic':
-    case 'answer basic':
-      if (loc === 'ai') showScene('ai_answer_basic');
-      else addLog("BASIC is having a nice retirement. This isn't the moment.");
-      break;
-
-    case 'assembly':
-    case 'answer assembly':
-      if (loc === 'ai') showScene('ai_answer_asm');
-      else addLog("Assembly is always the moment, but also: not right now.");
-      break;
-
-    case 'go shelf':
-    case 'look shelf':
-    case 'check shelf':
-      showScene('shelf'); break;
-
-    case 'open debugger':
-    case 'use debugger':
-      if (loc === 'shelf') showScene('debugger');
-      else addLog("You don't see Debugger Deluxe here. Try <span class='frag'>go shelf</span>.");
-      break;
-
-    case 'read zines':
-    case 'read bbs zines':
-      if (loc === 'shelf') showScene('bbs');
-      else addLog("No zines here. Try <span class='frag'>go shelf</span>.");
-      break;
-
-    case 'save':
-    case 'answer save':
-      if (loc === 'debugger') showScene('fill_save');
-      else addLog("Save what? (Try it inside the debugger.)");
-      break;
-
-    case 'help':
-    case 'answer help':
-      if (loc === 'debugger') showScene('fill_help');
-      else addLog("Type <span class='frag'>help</span> for commands.");
-      break;
-
-    case 'go server':
-    case 'go server room':
-    case 'check server room':
-      showScene('server'); break;
-
-    case 'use terminal':
-    case 'open terminal':
-      if (loc === 'server') showScene('terminal_scene');
-      else addLog("You must be in the server room. Try <span class='frag'>go server</span>.");
-      break;
-
-    default:
-      // A gentle nudge if they try to paste partial patch
-      if (txt.includes('sudo') || txt.includes('internet')) {
-        addLog("That looks patch-adjacent. Try <span class='frag'>assemble</span>, then <span class='frag'>run patch</span> (in the server terminal).");
-      } else {
-        addLog(`I don't understand "<span class='frag'>${escapeHtml(raw.trim())}</span>". Type <span class='frag'>help</span>.`);
-      }
-  }
-}
-
-/* ---------------------------
-   Helpers
-----------------------------*/
-function addLog(text){
-  const p = document.createElement('div');
-  p.innerHTML = text;
-  logEl.appendChild(p);
+function addLog(html){
+  const d = document.createElement('div');
+  d.innerHTML = html;
+  logEl.appendChild(d);
   logEl.scrollTop = logEl.scrollHeight;
 }
 
-function addInventory(name, id){
-  if(game.inventory.some(i=>i.id===id)) return;
-  game.inventory.push({name,id});
-  updateInventoryUI();
+function setRoom(roomKey){
+  game.room = roomKey;
+  game.knownRooms.add(roomKey);
+  roomPill.textContent = `Room: ${world[roomKey].name}`;
+  showRoomDesc();
+  updateUI();
 }
 
-function updateInventoryUI(){
+function showRoomDesc(){
+  const room = world[game.room];
+  addLog(`<div class="muted">[${room.name}]</div>`);
+  room.desc.forEach(line => addLog(line));
+}
+
+function addInventory(item){
+  if(game.inventory.some(x=>x.id===item.id)) return;
+  game.inventory.push(item);
+  updateUI();
+}
+
+function updateUI(){
+  // inventory
   invEl.innerHTML = '';
   if(game.inventory.length===0){
-    invEl.innerHTML = '<div class="item"><div class="icon">—</div><div style="flex:1">No tools yet</div></div>';
-    return;
+    invEl.innerHTML = `<div class="item"><div class="icon">—</div><div style="flex:1">No tools yet</div></div>`;
+  } else {
+    game.inventory.forEach(i=>{
+      const fragText = fragmentHintForItem(i);
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.innerHTML = `
+        <div class="icon">${escapeHtml(i.icon||'⚙')}</div>
+        <div style="flex:1">
+          <div style="font-weight:700">${escapeHtml(i.name)}</div>
+          <div class="muted" style="margin-top:2px;font-size:11px">${fragText}</div>
+        </div>`;
+      invEl.appendChild(div);
+    });
   }
-  game.inventory.forEach(i=>{
-    const div = document.createElement('div');
-    div.className = 'item';
-    div.innerHTML = `<div class="icon">⚙</div><div style="flex:1">
-      <strong style="color:var(--accent)">${escapeHtml(i.name)}</strong>
-      <div style="font-size:12px;color:var(--muted)">${fragmentForTool(i.name)}</div>
-    </div>`;
-    invEl.appendChild(div);
-  });
+
+  // status
+  statusEl.textContent = `Fragments: ${haveCount()}/${REQUIRED_FRAGS.length}`;
 }
 
-function fragmentForTool(toolName){
-  // Map tools to their fragment key for display
+function fragmentHintForItem(item){
+  // show fragment owned
   const map = {
-    "Binary Decoder":"sudo",
-    "Floppy Patch":"save_the",
-    "NeonNet Token":"internet"
+    tool_binary:'sudo',
+    tool_floppy:'save_the',
+    tool_card:'(unlock)',
+    tool_duct:'(utility)'
   };
-  const k = map[toolName];
-  if(!k) return "";
-  const v = game.fragments[k];
-  return v ? `Fragment: <span class='frag'>${escapeHtml(v)}</span>` : "";
+  const k = map[item.id];
+  if(!k) return '';
+  if(game.fragments[k]) return `Fragment: <span class="frag">${escapeHtml(game.fragments[k])}</span>`;
+  return `Hint: ${escapeHtml(k)}`;
 }
 
-function printInventory(){
-  if(game.inventory.length === 0) {
-    addLog("Your inventory is empty. The void applauds politely.");
-    return;
-  }
-  addLog("You are carrying:");
-  game.inventory.forEach(item => addLog(`- ${escapeHtml(item.name)}`));
-  addLog("--- Fragments ---");
-  REQUIRED_FRAG_KEYS.forEach(k=>{
-    addLog(`<div style="color:var(--muted)">${escapeHtml(k)} → <span class='frag'>${escapeHtml(game.fragments[k] || '(missing)')}</span></div>`);
-  });
-}
-
-function updateStatusUI(printToLog=false){
-  const have = REQUIRED_FRAG_KEYS.filter(k=>!!game.fragments[k]).length;
-  statusEl.textContent = `Fragments: ${have}/${REQUIRED_FRAG_KEYS.length}`;
-  if(printToLog){
-    addLog(`<div style="color:var(--muted)">Status: ${have}/${REQUIRED_FRAG_KEYS.length} fragments collected.</div>`);
-  }
-}
-
-function isPatchComplete(){
-  return REQUIRED_FRAG_KEYS.every(k => typeof game.fragments[k] === 'string' && game.fragments[k].length > 0);
-}
-function missingFragmentCount(){
-  return REQUIRED_FRAG_KEYS.filter(k=>!game.fragments[k]).length;
-}
-
-function runTerminal(){
-  const raw = termInput.value;
-  const txt = raw.trim();
-  if(!txt) return;
-
-  termInput.value = '';
-  termMsg.innerText = '';
-  parseCommand(txt);
-}
-
-function escapeHtml(s){
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
+/* One-time reward helper */
 function grantOnce(flag, fn){
-  if(game.obtainedFlags[flag]) return;
-  game.obtainedFlags[flag] = true;
+  if(game.obtained[flag]) return;
+  game.obtained[flag]=true;
   fn();
 }
 
-function resetGame(){
-  game.currentLocation = 'start';
-  game.inventory = [];
-  game.fragments = {};
-  game.obtainedFlags = {};
-  game.konamiProgress = 0;
+/* ---------------------------
+   Commands
+----------------------------*/
+function parse(raw){
+  const txt = normalize(raw);
+  if(!txt) return;
+  addLog(`<div><span class="frag">&gt;</span> ${escapeHtml(raw.trim())}</div>`);
 
-  logEl.innerHTML = '';
-  termInput.value = '';
-  termMsg.innerText = '';
+  // Win by manual paste of exact assembled patch (case-insensitive)
+  if(isComplete() && txt === normalize(assembledPatch())){
+    victory();
+    return;
+  }
 
-  showScene('start');
-  updateStatusUI();
+  // Global
+  if(txt === 'help'){
+    addLog(`<div class="muted">Commands:</div>
+      <div class="muted">
+      <span class="kbd">go [room]</span> (desk/hallway/server/lab/breakroom/storage/security)<br/>
+      <span class="kbd">look</span>, <span class="kbd">map</span>, <span class="kbd">inventory</span>/<span class="kbd">i</span>, <span class="kbd">notes</span><br/>
+      <span class="kbd">open email</span>, <span class="kbd">download attachment</span>, <span class="kbd">reply</span><br/>
+      <span class="kbd">use [thing]</span>, <span class="kbd">take [thing]</span>, <span class="kbd">talk [name]</span><br/>
+      <span class="kbd">assemble</span>, <span class="kbd">run patch</span>, <span class="kbd">reset</span>
+      </div>`);
+    return;
+  }
+  if(txt === 'look' || txt === 'l'){
+    showRoomDesc();
+    return;
+  }
+  if(txt === 'inventory' || txt === 'i'){
+    if(game.inventory.length===0) addLog("Inventory: (empty). The duck judges you softly.");
+    else {
+      addLog("Inventory:");
+      game.inventory.forEach(i=>addLog(`- ${escapeHtml(i.name)}`));
+      addLog(`<div class="muted">Fragments:</div>`);
+      REQUIRED_FRAGS.forEach(k=>{
+        addLog(`<div class="muted">${k} → <span class="frag">${escapeHtml(game.fragments[k]||'(missing)')}</span></div>`);
+      });
+    }
+    return;
+  }
+  if(txt === 'notes'){
+    if(game.notes.length===0){ addLog("Notes: (none yet)."); return; }
+    addLog("<div class='muted'>Notes:</div>");
+    game.notes.slice(-12).forEach(n => addLog(`• ${n}`));
+    return;
+  }
+  if(txt === 'map'){
+    const rooms = Array.from(game.knownRooms).map(r=>world[r].name).join(", ");
+    addLog(`<div class="muted">Known rooms:</div> ${escapeHtml(rooms)}`);
+    addLog(`<div class="muted">From here you can go:</div> ${world[game.room].exits.map(x=>`<span class="frag">${escapeHtml(world[x].name.toLowerCase())}</span>`).join(" , ")}`);
+    return;
+  }
+  if(txt === 'assemble'){
+    addLog("<div class='muted'>Patch assembly:</div>");
+    REQUIRED_FRAGS.forEach(k=>{
+      addLog(`<div class="muted">${k} → <span class="frag">${escapeHtml(game.fragments[k]||'(missing)')}</span></div>`);
+    });
+    addLog(`<div style="margin-top:6px">Assembled:</div><div><span class="frag">${escapeHtml(assembledPatch()||'(nothing yet)')}</span></div>`);
+    if(!isComplete()) addLog(`<div class="muted">Missing ${missingCount()} fragment(s).</div>`);
+    return;
+  }
+  if(txt === 'run patch' || txt === 'run'){
+    if(game.room !== 'server'){
+      addLog("No terminal access here. Try <span class='frag'>go server</span>.");
+      return;
+    }
+    if(!isComplete()){
+      addLog("Patch incomplete. Try <span class='frag'>assemble</span> and keep hunting.");
+      return;
+    }
+    victory();
+    return;
+  }
+  if(txt === 'reset'){
+    reset();
+    return;
+  }
+
+  // Movement
+  if(txt.startsWith('go ')){
+    const destRaw = txt.slice(3).trim();
+    const dest = resolveRoom(destRaw);
+    if(!dest){ addLog("Unknown destination. Try <span class='frag'>map</span>."); return; }
+    if(!world[game.room].exits.includes(dest)){
+      addLog("You can't get there directly from here.");
+      return;
+    }
+    // security lock
+    if(dest === 'security' && world.security.locked){
+      addLog("The SECURITY door is locked. It wants an <span class='frag'>access card</span> and a <span class='frag'>password</span>.");
+      return;
+    }
+    setRoom(dest);
+    return;
+  }
+
+  // Email
+  if(txt === 'open email'){
+    addLog("The email includes an attachment <span class='frag'>cascade_map.bin</span> and a riddle in binary-ish vibes.");
+    addLog("Try <span class='frag'>download attachment</span> or <span class='frag'>reply</span>.");
+    return;
+  }
+  if(txt === 'download attachment' || txt === 'download'){
+    grantOnce('got_sudo', ()=>{
+      addLog("You open 'cascade_map.bin': <span class='frag'>01010011 01010101 01000100 01001111</span>");
+      addLog("ASCII says: <span class='frag'>SUDO</span>. Classic.");
+      addInventory(items.binary);
+      game.fragments.sudo = "sudo_";
+      note("Email attachment decoded to SUDO.");
+      updateUI();
+    });
+    if(game.obtained.got_sudo) addLog("You've already decoded that attachment.");
+    return;
+  }
+  if(txt === 'reply'){
+    addLog("Auto-reply: 'Find Marge in the lab. She speaks in beeps.'");
+    note("Auto-reply points to Marge (lab).");
+    return;
+  }
+
+  // Use / Take / Talk routing
+  if(txt.startsWith('use ')){
+    const thing = txt.slice(4).trim();
+    useThing(thing);
+    return;
+  }
+  if(txt.startsWith('take ')){
+    const thing = txt.slice(5).trim();
+    takeThing(thing);
+    return;
+  }
+  if(txt.startsWith('talk ')){
+    const who = txt.slice(5).trim();
+    talkTo(who);
+    return;
+  }
+
+  // Puzzle specific shortcuts
+  if(txt === 'javascript' || txt === 'answer javascript'){
+    if(game.room !== 'lab'){ addLog("No NeonNet prompt here."); return; }
+    neonNetReward();
+    return;
+  }
+
+  // Default
+  addLog("Unrecognized. Type <span class='frag'>help</span>.");
 }
 
-function handleKonamiKey(e){
-  if(e.key === konami[game.konamiProgress]) {
+/* ---------------------------
+   Resolution helpers
+----------------------------*/
+function resolveRoom(raw){
+  const r = normalize(raw);
+  const aliases = {
+    'start':'start',
+    'desk':'desk',
+    'hall':'hallway',
+    'hallway':'hallway',
+    'server':'server',
+    'server room':'server',
+    'lab':'lab',
+    'break':'breakroom',
+    'breakroom':'breakroom',
+    'break room':'breakroom',
+    'storage':'storage',
+    'closet':'storage',
+    'security':'security',
+    'security office':'security'
+  };
+  return aliases[r] || null;
+}
+
+function hasItem(id){ return game.inventory.some(i=>i.id===id); }
+
+/* ---------------------------
+   Interactions
+----------------------------*/
+function useThing(raw){
+  const t = normalize(raw);
+
+  // Desk things
+  if(game.room==='desk'){
+    if(t==='floppy' || t==='disk' || t==='use floppy'){
+      grantOnce('got_save', ()=>{
+        addLog("You slot 'PATCH.1989'. The drive chatters like a tiny angry printer.");
+        addLog("On-screen: fragment <span class='frag'>save_the_</span>.");
+        addInventory(items.floppy);
+        game.fragments.save_the = "save_the_";
+        note("Floppy revealed save_the_.");
+        updateUI();
+      });
+      if(game.obtained.got_save) addLog("The floppy has already given up its secrets.");
+      return;
+    }
+    if(t==='duck' || t==='rubber duck'){
+      addLog("The duck stares into your soul and then towards the lab.");
+      addLog("It squeaks: 'Ask <span class='frag'>Marge</span>. Bring coffee.'");
+      note("Duck suggests Marge (lab) and coffee leverage.");
+      return;
+    }
+  }
+
+  // Lab things
+  if(game.room==='lab'){
+    if(t==='cassette' || t==='loop.tape' || t==='tape'){
+      // Morse puzzle: "... --- ..."
+      grantOnce('morse_note', ()=>{
+        addLog("You press play. The cassette clicks. Beeps emerge:");
+        addLog("<span class='frag'>... --- ...</span> then <span class='frag'>.--. .. .--. .</span>");
+        addLog("Morse? That second word decodes to <span class='frag'>PIPE</span>.");
+        note("Cassette Morse: ...---... then .--... = PIPE");
+      });
+      addLog("If you want to claim the fragment, convince Marge with the right decoded word.");
+      return;
+    }
+    if(t==='hex' || t==='sticky' || t==='note'){
+      // Hex -> ASCII: 6e 65 74
+      grantOnce('hex_note', ()=>{
+        addLog("Sticky note reads: <span class='frag'>6e 65 74</span>");
+        addLog("Hex to ASCII: 6e= n, 65= e, 74= t → <span class='frag'>net</span>.");
+        note("Hex note decodes to 'net'.");
+      });
+      addLog("Try telling Chip what it decodes to.");
+      return;
+    }
+  }
+
+  // Breakroom
+  if(game.room==='breakroom'){
+    if(t==='bulletin' || t==='board' || t==='rot13'){
+      grantOnce('rot13_note', ()=>{
+        addLog("The bulletin board has a ROT13 line:");
+        addLog("<span class='frag'>pbzzvg</span>");
+        addLog("That decodes to <span class='frag'>commit</span>.");
+        note("ROT13 pbzzvg -> commit");
+      });
+      addLog("You’ll need the fragment in code-form. Maybe Security Office has the exact syntax.");
+      return;
+    }
+  }
+
+  // Storage
+  if(game.room==='storage'){
+    if(t==='panel' || t==='logic' || t==='puzzle'){
+      addLog("A logic panel lights up:");
+      addLog("<div class='muted'>If (A XOR B) = 1 and A = 1, what is B?</div>");
+      addLog("Answer with <span class='frag'>talk sentry-88</span> later, or type <span class='frag'>take access card</span> after solving.");
+      note("Logic panel: if A XOR B=1 and A=1, then B=?");
+      return;
+    }
+    if(t==='access card' || t==='card'){
+      addLog("Try <span class='frag'>take access card</span> (but only after solving the logic panel).");
+      return;
+    }
+  }
+
+  // Server
+  if(game.room==='server'){
+    if(t==='terminal'){
+      addLog("Terminal ready. Use <span class='frag'>assemble</span> then <span class='frag'>run patch</span>.");
+      return;
+    }
+    if(t==='security door' || t==='door'){
+      addLog("Locked. Needs <span class='frag'>access card</span> + <span class='frag'>password</span>.");
+      return;
+    }
+  }
+
+  addLog("Nothing happens.");
+}
+
+function takeThing(raw){
+  const t = normalize(raw);
+
+  if(game.room==='storage' && (t==='access card' || t==='card')){
+    // Require logic solved via answering it
+    if(!game.obtained.logic_solved){
+      addLog("The card is behind a panel. Solve the logic question first.");
+      addLog("Hint: XOR outputs 1 when inputs differ.");
+      return;
+    }
+    grantOnce('got_card', ()=>{
+      addLog("You retrieve the <span class='frag'>ACCESS CARD</span>. It’s warm, like it remembers being useful.");
+      addInventory(items.accesscard);
+      updateUI();
+    });
+    if(game.obtained.got_card) addLog("You already took the card.");
+    return;
+  }
+
+  addLog("You can't take that.");
+}
+
+function talkTo(raw){
+  const who = normalize(raw);
+
+  // Lab characters
+  if(game.room==='lab'){
+    if(who==='marge' || who==='sysadmin' || who==='admin'){
+      addLog("Marge (sysadmin) squints: 'If you want my help, prove you can decode the tape.'");
+      addLog("She asks: 'What word did the beeps spell?'");
+      addLog("Answer by typing: <span class='frag'>use word pipe</span>.");
+      return;
+    }
+    if(who==='chip' || who==='intern'){
+      addLog("Chip (intern) spins in their chair: 'I only trust hex.'");
+      addLog("Chip asks: 'What does <span class='frag'>6e 65 74</span> say?'");
+      addLog("Answer by typing: <span class='frag'>use word net</span>.");
+      return;
+    }
+  }
+
+  // Security bot exists only in security room
+  if(game.room==='security'){
+    if(who==='sentry-88' || who==='sentry' || who==='bot'){
+      addLog("SENTRY-88 whirs awake: 'AUTH CHALLENGE: LOGIC PANEL RESULT?'");
+      addLog("Answer by typing: <span class='frag'>use word 0</span> or <span class='frag'>use word 1</span>.");
+      return;
+    }
+  }
+
+  addLog("No response.");
+}
+
+/* Word submission mechanic for puzzles */
+function useWordSubmission(word){
+  const w = normalize(word);
+
+  // Marge wants PIPE -> awards pipe fragment "|"
+  if(game.room==='lab' && !game.fragments.pipe && (w==='pipe')){
+    addLog("Marge nods once. This is her version of applause.");
+    addLog("She hands you a punched card that reads: <span class='frag'>|</span> (pipe).");
+    game.fragments.pipe = "|";
+    note("Marge awarded pipe fragment '|'.");
+    updateUI();
+    return true;
+  }
+
+  // Chip wants NET -> awards 'net'
+  if(game.room==='lab' && !game.fragments.net && (w==='net')){
+    addLog("Chip gasps: 'Correct! That’s… literally net.'");
+    addLog("Chip gives you a tiny label maker strip: <span class='frag'>net</span>.");
+    game.fragments.net = "net";
+    note("Chip awarded 'net'.");
+    updateUI();
+    return true;
+  }
+
+  // Storage logic XOR puzzle
+  if(game.room==='storage' && !game.obtained.logic_solved && (w==='0' || w==='1')){
+    // Condition: (A XOR B)=1 and A=1 => B must be 0
+    if(w==='0'){
+      addLog("The panel clicks. A hidden latch unlocks. Correct.");
+      game.obtained.logic_solved = true;
+      note("Logic panel solved: B=0.");
+    } else {
+      addLog("The panel buzzes. Incorrect. XOR wants DIFFERENT.");
+    }
+    return true;
+  }
+
+  // Security office password challenge (from breakroom flyer)
+  if(game.room==='security' && !game.obtained.security_pass && (w==='commit')){
+    addLog("The beige terminal accepts: ADMIN VERB confirmed.");
+    addLog("It prints: fragment <span class='frag'>commit();</span>");
+    game.fragments.commit = "commit();";
+    game.obtained.security_pass = true;
+    note("Security terminal awarded commit();");
+    updateUI();
+    return true;
+  }
+
+  return false;
+}
+
+/* NeonNet reward gated behind talking to Marge & Chip first (harder) */
+function neonNetReward(){
+  // Require at least 3 notes as proof-of-work
+  if(game.notes.length < 3){
+    addLog("NeonNet refuses to appear. The air smells like 'insufficient evidence'.");
+    addLog("Hint: gather intel in the lab and break room first.");
+    return;
+  }
+  if(game.fragments.sudo && game.fragments.save_the && game.fragments.net){
+    addLog("NeonNet flickers onto the lab monitor: 'You’re doing actual work. Suspicious.'");
+    addLog("It grants you the final piece of the chain: <span class='frag'>save_the_net</span> already implies intent. No extra piece needed.");
+    addLog("NeonNet adds: 'Security Office will like the word <span class='frag'>commit</span>.'");
+    note("NeonNet hints: Security likes 'commit'.");
+  } else {
+    addLog("NeonNet appears briefly: 'Get more core fragments first.'");
+  }
+}
+
+/* Unlock Security Office requires Access Card + password word */
+function tryUnlockSecurity(){
+  if(!world.security.locked) return true;
+  if(!hasItem('tool_card')){
+    addLog("Need an <span class='frag'>access card</span>.");
+    return false;
+  }
+  addLog("Door reader flashes. It also wants a password (admin verb).");
+  addLog("Hint: check the break room's ROT13 board.");
+  return false;
+}
+
+/* Victory */
+function victory(){
+  addLog("<div class='muted'>[PATCH TERMINAL]</div>");
+  addLog(`You enter: <span class='frag'>${escapeHtml(assembledPatch())}</span>`);
+  addLog("The room pauses. Fans spin down slightly, like the building exhaled.");
+  addLog("<span class='frag'>✅ NETWORK STABLE</span> — cascade contained. Somewhere, a router stops crying.");
+  addLog("Marge texts: 'Nice. Don't touch prod again.'");
+}
+
+/* Reset */
+function reset(){
+  game.room='start';
+  game.inventory=[];
+  game.fragments={};
+  game.obtained={};
+  game.notes=[];
+  game.knownRooms=new Set(['start']);
+  game.konamiProgress=0;
+  logEl.innerHTML='';
+  setRoom('start');
+  addLog("<div class='muted'>(World reset.)</div>");
+}
+
+/* ---------------------------
+   Special command hook: "use word X"
+----------------------------*/
+function handleSpecialWordCommand(txt){
+  if(!txt.startsWith('use word ')) return false;
+  const w = txt.slice('use word '.length).trim();
+  const ok = useWordSubmission(w);
+  if(!ok) addLog("That word doesn't fit any active puzzle here.");
+  return true;
+}
+
+/* ---------------------------
+   Security navigation override
+----------------------------*/
+function goSecurityOverride(){
+  // Called when player tries to go security from server
+  if(game.room !== 'server'){ addLog("You are not at the security door."); return; }
+  if(world.security.locked){
+    if(!tryUnlockSecurity()) return;
+  }
+  setRoom('security');
+}
+
+/* ---------------------------
+   Input runner
+----------------------------*/
+function runInput(){
+  const raw = inputEl.value;
+  const txt = normalize(raw);
+  if(!txt) return;
+
+  inputEl.value='';
+  termMsg.textContent='';
+
+  // Konami progress (keyboard) handled elsewhere
+
+  // Special word command
+  if(handleSpecialWordCommand(txt)) return;
+
+  // Security entry attempt shortcut
+  if(txt === 'go security' || txt === 'go security office'){
+    if(game.room === 'server'){
+      // If locked, require card AND then password in-room
+      if(world.security.locked){
+        if(!hasItem('tool_card')){
+          addLog(`<div><span class="frag">&gt;</span> ${escapeHtml(raw.trim())}</div>`);
+          addLog("Locked. Need <span class='frag'>access card</span>. Try <span class='frag'>go storage</span>.");
+          return;
+        }
+        // unlock door with card, but keep room "locked" until password used in security terminal
+        world.security.locked = false;
+        addLog(`<div><span class="frag">&gt;</span> ${escapeHtml(raw.trim())}</div>`);
+        addLog("Card accepted. Door unlocks with a tired beep.");
+        setRoom('security');
+        addLog("SENTRY-88 watches you like a disappointed toaster.");
+        addLog("Try <span class='frag'>talk sentry-88</span> or <span class='frag'>use word commit</span> (if you found it).");
+        return;
+      }
+      setRoom('security');
+      return;
+    }
+  }
+
+  // If in security and they supply commit, accept
+  if(game.room==='security' && (txt==='commit' || txt==='use commit')){
+    addLog(`<div><span class="frag">&gt;</span> ${escapeHtml(raw.trim())}</div>`);
+    useWordSubmission('commit');
+    return;
+  }
+
+  // Shortcut: "go X" resolution for rooms not direct
+  if(txt.startsWith('go ')){
+    const dest = resolveRoom(txt.slice(3));
+    if(dest){
+      // enforce adjacency
+      addLog(`<div><span class="frag">&gt;</span> ${escapeHtml(raw.trim())}</div>`);
+      if(!world[game.room].exits.includes(dest)){
+        addLog("No direct path. Try <span class='frag'>go hallway</span> first.");
+        return;
+      }
+      if(dest==='security'){
+        // handle lock
+        if(world.security.locked){
+          addLog("Security is locked. Needs <span class='frag'>access card</span>.");
+          return;
+        }
+      }
+      setRoom(dest);
+      return;
+    }
+  }
+
+  // Parse normal
+  parse(raw);
+
+  // Contextual hinting
+  if(txt==='go breakroom') termMsg.textContent = "Try the ROT13 board.";
+  if(txt==='go storage') termMsg.textContent = "There’s a logic panel here.";
+  if(txt==='go lab') termMsg.textContent = "Talk to Marge and Chip.";
+  if(txt==='go server') termMsg.textContent = "Assemble and run when ready.";
+}
+
+/* ---------------------------
+   Konami
+----------------------------*/
+function handleKonami(e){
+  if(e.key === konami[game.konamiProgress]){
     game.konamiProgress++;
     if(game.konamiProgress === konami.length){
-      addLog("<div style='color:var(--neon)'>✨ KONAMI EASTER EGG: Turbo Floppy Mode engaged. Your typing speed increases by 12% (purely emotional).</div>");
-      game.konamiProgress = 0;
+      addLog("<div class='muted'>[EASTER EGG]</div> The CRT jitters. A secret sticker appears: <span class='frag'>TURBO</span>.");
+      addLog("Effect: the CLEAR button now makes a satisfying 'clack' (imaginary).");
+      game.konamiProgress=0;
     }
   } else {
-    game.konamiProgress = 0;
+    game.konamiProgress=0;
   }
 }
 
 /* ---------------------------
    Boot
 ----------------------------*/
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', ()=>{
   logEl = document.getElementById('log');
   invEl = document.getElementById('inventory');
-  termInput = document.getElementById('terminalInput');
+  inputEl = document.getElementById('terminalInput');
   runBtn = document.getElementById('runBtn');
+  clearBtn = document.getElementById('clearBtn');
   termMsg = document.getElementById('termMsg');
   statusEl = document.getElementById('status');
+  roomPill = document.getElementById('roomPill');
 
-  runBtn.addEventListener('click', runTerminal);
-  termInput.addEventListener('keydown', (e)=> {
-    if(e.key==='Enter') runTerminal();
-    handleKonamiKey(e);
+  runBtn.addEventListener('click', runInput);
+  clearBtn.addEventListener('click', ()=>{ logEl.innerHTML=''; });
+
+  inputEl.addEventListener('keydown', (e)=>{
+    if(e.key==='Enter') runInput();
+    handleKonami(e);
   });
 
-  termInput.addEventListener('input', ()=>{
-    const v = termInput.value.trim();
-    const patch = assembledPatch();
-    if(!v) { termMsg.innerText = ""; return; }
-    if(isPatchComplete() && normalize(patch).startsWith(normalize(v))) termMsg.innerText = "Looks promising...";
-    else if(normalize('assemble').startsWith(normalize(v))) termMsg.innerText = "Try assembling the patch…";
-    else if(normalize('run patch').startsWith(normalize(v))) termMsg.innerText = "Server room vibes…";
-    else termMsg.innerText = "";
+  inputEl.addEventListener('input', ()=>{
+    const v = normalize(inputEl.value);
+    if(!v){ termMsg.textContent=''; return; }
+    if('help'.startsWith(v)) termMsg.textContent="Need commands?";
+    else if('map'.startsWith(v)) termMsg.textContent="Get your bearings.";
+    else if('notes'.startsWith(v)) termMsg.textContent="Review clues.";
+    else if('assemble'.startsWith(v)) termMsg.textContent="Build the patch.";
+    else if('run patch'.startsWith(v)) termMsg.textContent="Only in server room.";
+    else termMsg.textContent="";
   });
 
-  resetGame();
+  // Start game
+  setRoom('start');
+  addLog("<div class='muted'>Tip: try <span class='frag'>go desk</span> or <span class='frag'>open email</span>.</div>");
+
+  // Attach a tiny hidden word command parser:
+  const oldParse = parse;
+  parse = function(raw){
+    const txt = normalize(raw);
+    if(txt.startsWith('use word ')){
+      addLog(`<div><span class="frag">&gt;</span> ${escapeHtml(raw.trim())}</div>`);
+      const w = txt.slice(9).trim();
+      const ok = useWordSubmission(w);
+      if(!ok) addLog("That word doesn't fit here.");
+      return;
+    }
+    return oldParse(raw);
+  };
 });
 </script>
 </body>
