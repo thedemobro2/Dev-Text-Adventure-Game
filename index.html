@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Save the Net — A Retro Dev Text Adventure</title>
 <style>
-  /* --- Style changes --- */
   :root{
     --bg:#071126;
     --panel:#071b2b;
@@ -28,10 +27,7 @@
   main{display:grid;grid-template-columns: 1fr 320px; gap:16px;margin-top:16px}
   .game{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.08));
         padding:16px;border-radius:8px;min-height:460px;box-shadow: inset 0 0 40px var(--crt);}
-  
-  /* --- MODIFIED: Log is taller, no choices div --- */
   .log{height:460px;overflow:auto;padding:10px;border-radius:6px;background:linear-gradient(180deg, rgba(0,0,0,0.05), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.02)}
-  
   .side{background:#030b12;padding:12px;border-radius:8px;min-height:460px}
   .inventory{display:flex;flex-direction:column;gap:8px}
   .item{display:flex;align-items:center;gap:8px;padding:6px;background:rgba(255,255,255,0.02);border-radius:6px;border:1px dashed rgba(255,255,255,0.02)}
@@ -44,7 +40,7 @@
   .icon{width:28px;height:28px;border-radius:4px;display:inline-grid;place-items:center;font-size:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03)}
   .scanlines{position:relative}
   .scanlines:after{content:"";position:absolute;top:0;left:0;right:0;bottom:0;background-image:linear-gradient(rgba(0,0,0,0.02) 50%, transparent 50%);background-size:100% 4px;pointer-events:none;border-radius:6px}
-  
+  .pill{display:inline-block;padding:2px 6px;border-radius:999px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:var(--muted);font-size:12px}
   @media(max-width:920px){main{grid-template-columns:1fr;}}
 </style>
 </head>
@@ -52,7 +48,7 @@
 <div class="wrap">
   <header>
     <div>
-      <div class="neonTitle">Save the Net — v2.1 • Visibility Fix</div>
+      <div class="neonTitle">Save the Net — v2.2 • Patch Assembler Edition</div>
       <h1>Inbox Panic at 09:13</h1>
       <div class="subtitle">A tiny text adventure — 80s neon, floppy nostalgia, & modern AI shenanigans</div>
     </div>
@@ -64,19 +60,22 @@
     </section>
 
     <aside class="side">
-      <h3 style="margin:0;color:var(--accent)">Inventory</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <h3 style="margin:0;color:var(--accent)">Inventory</h3>
+        <div id="status" class="pill">Fragments: 0/3</div>
+      </div>
       <div id="inventory" class="inventory" style="margin-top:8px">
         <div class="item"><div class="icon">—</div><div style="flex:1">No tools yet</div></div>
       </div>
 
       <div class="terminal">
-        <div style="font-size:13px;color:var(--muted)">Terminal (Type 'help')</div>
-        <input id="terminalInput" type="text" placeholder='Type command (e.g., look desk)' />
+        <div style="font-size:13px;color:var(--muted)">Terminal (Type <span class="frag">help</span>)</div>
+        <input id="terminalInput" type="text" placeholder='Type command (e.g., open email)' />
         <button id="runBtn" class="btn">RUN</button>
         <div id="termMsg" style="margin-top:6px;font-size:13px;color:var(--muted)"></div>
       </div>
-      
-      <div style="margin-top:12px;color:var(--muted);font-size:12px">Secrets: try the Konami ↑↑↓↓←→←→ (on keyboard)</div>
+
+      <div style="margin-top:12px;color:var(--muted);font-size:12px">Secrets: Konami ↑↑↓↓←→←→ (on keyboard)</div>
     </aside>
   </main>
 
@@ -84,33 +83,44 @@
 </div>
 
 <script>
-/* Game data and state */
+/* ---------------------------
+   Game state
+----------------------------*/
 const game = {
   currentLocation: 'start',
   inventory: [],
-  fragments: {},
-  codeFragmentsCollected: 0,
+  fragments: {},            // key -> fragment text
+  obtainedFlags: {},        // one-time rewards
   konamiProgress: 0
 };
 
-/* Final code to save the internet */
-const FINAL_CODE = "sudo_save_the_internet();";
-const konami = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight'];
+/* We now build a REAL final code from fragments */
+const REQUIRED_FRAG_KEYS = ['sudo', 'save_the', 'internet'];
+function assembledPatch(){
+  // Assemble in stable order so the player can learn it
+  const s = (game.fragments.sudo || '') + (game.fragments.save_the || '') + (game.fragments.internet || '');
+  return s;
+}
+function normalize(s){ return (s || '').trim().toLowerCase(); }
 
-/* Scenes (now act as command results) */
+/* Konami */
+const konami = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight'];
+
+/* ---------------------------
+   Scenes
+----------------------------*/
 const scenes = {
   start: {
     text: [
       "You are Devon (a mild-mannered developer), hunched over a humming CRT at 09:13 on a Tuesday.",
       "An email pings: SUBJECT: ⚠️ 'SYSTEM: Critical network cascade detected' — sender: unknown@neonnet.ai",
       "It says: 'Find the tools, assemble the patch, and run the code to stop the cascade.'",
-      "You have a laptop, a weird office full of relics, and about 3 cups of suspicious coffee.",
-      "You are at your <span class='frag'>desk</span>."
+      "You are at your <span class='frag'>desk</span>. Try: <span class='frag'>look desk</span> or <span class='frag'>open email</span>."
     ]
   },
   open_email: {
     text:[
-      "The email is dramatic. It includes an attachment 'cascade_map.bin' and a short riddle:",
+      "The email is dramatic. It includes an attachment <span class='frag'>cascade_map.bin</span> and a short riddle:",
       "\"I speak in ones and zeros, but I say hello — convert my waves to letters to move forward.\"",
       "You can <span class='frag'>download attachment</span> or <span class='frag'>reply</span>."
     ]
@@ -118,131 +128,134 @@ const scenes = {
   download_bin: {
     text:[
       "You open 'cascade_map.bin'. It's a tiny sequence: 01001000 01001001",
-      "Binary! You recall that 01001000 = H and 01001001 = I."
+      "Binary! You recall that 01001000 = H and 01001001 = I.",
+      "Behind the HI is a hidden admin note: <span class='frag'>sudo</span> (because of course)."
     ],
     onEnter(){
-      addInventory("Binary Decoder", "frag_hi");
-      addLog("You gained tool: Binary Decoder — it showed fragment: <span class='frag'>\"sudo\"</span> (well, sort of).");
-      game.fragments["Binary Decoder"] = "sudo_";
-      game.codeFragmentsCollected++;
+      grantOnce('got_sudo', ()=>{
+        addInventory("Binary Decoder", "tool_binary");
+        game.fragments.sudo = "sudo_";
+        addLog("You gained tool: Binary Decoder → fragment: <span class='frag'>sudo_</span>");
+      });
     }
   },
   reply:{
     text:[
-      "You type 'Who dis?'. The email auto-replies with a short poem: 'When music stored on tape must be read, a loop will tell the way ahead.'",
-      "You remember your old cassette player on the <span class='frag'>shelf</span>."
-    ]
-  },
-  slack:{
-    text:[
-      "Slack is full of GIFs and a pinned message from HR about ergonomic chairs. But a DM from 'glitchy-bot' reads: 'Want a hint? Look where floppy and modern meet.'"
+      "You type 'Who dis?'. The email auto-replies with a short poem:",
+      "'When music stored on tape must be read, a loop will tell the way ahead.'",
+      "You remember your old cassette player on the <span class='frag'>shelf</span>.",
+      "Try: <span class='frag'>go shelf</span>."
     ]
   },
   desk:{
     text:[
       "On your desk: a mug that says 'I <3 ASSEMBLY', a suspicious floppy disk labeled 'PATCH.1989', and a rubber duck.",
-      "You can <span class='frag'>use floppy</span>, <span class='frag'>talk to duck</span>, or look at the <span class='frag'>shelf</span>."
+      "You can <span class='frag'>use floppy</span>, <span class='frag'>talk to duck</span>, or <span class='frag'>go shelf</span>."
     ]
   },
   floppy:{
     text:[
-      "You find an ancient USB-floppy emulator and slot the disk. A little pixelated menu appears: it prints 'fragment: save_the_' on the screen.",
+      "You find an ancient USB-floppy emulator and slot the disk.",
+      "A pixelated menu appears and prints: fragment <span class='frag'>save_the_</span>."
     ],
     onEnter(){
-      addInventory("Floppy Patch", "frag_save");
-      game.fragments["Floppy Patch"] = "save_the_";
-      game.codeFragmentsCollected++;
-      addLog("You got fragment: <span class='frag'>\"save_the_\"</span>");
+      grantOnce('got_save_the', ()=>{
+        addInventory("Floppy Patch", "tool_floppy");
+        game.fragments.save_the = "save_the_";
+        addLog("You got fragment: <span class='frag'>save_the_</span>");
+      });
     }
   },
   duck:{
     text:[
-      "The duck whispers: 'I'm more helpful than most managers.' Under its wing is a sticky note with a QR-like pattern. It reads: 'AI -> ask politely.'",
+      "The duck whispers: 'I'm more helpful than most managers.'",
+      "Under its wing is a sticky note: 'AI -> ask politely.'",
       "You can <span class='frag'>use ai</span>."
     ]
   },
   ai:{
     text:[
-      "A window of NeonNet (a playful assistant) opens. It asks one question: 'What is the programming language of the internet's heart?'",
-      "You can answer <span class='frag'>javascript</span>, <span class='frag'>basic</span>, or <span class='frag'>assembly</span>."
+      "A window of NeonNet opens. It asks one question:",
+      "<span class='frag'>What is the programming language of the internet's heart?</span>",
+      "Answer: <span class='frag'>javascript</span>, <span class='frag'>basic</span>, or <span class='frag'>assembly</span>."
     ]
   },
   ai_answer_js:{
     text:[
-      "NeonNet chuckles: 'Modern, pragmatic. Take this token: _internet();'",
+      "NeonNet chuckles: 'Modern, pragmatic. Take this token.'",
+      "It coughs up a final fragment: <span class='frag'>internet();</span>"
     ],
     onEnter(){
-      addInventory("NeonNet Token", "frag_internet");
-      game.fragments["NeonNet Token"] = "internet();";
-      game.codeFragmentsCollected++;
-      addLog("NeonNet gave you fragment: <span class='frag'>\"internet();\"</span>");
+      grantOnce('got_internet', ()=>{
+        addInventory("NeonNet Token", "tool_neonnet");
+        game.fragments.internet = "internet();";
+        addLog("NeonNet gave you fragment: <span class='frag'>internet();</span>");
+      });
     }
   },
   ai_answer_basic:{
     text:[
-      "NeonNet sighs. 'Cute. But no. Here's a consolation prize: a sticker.' It's decorative but not helpful."
+      "NeonNet sighs. 'Cute. But no.'",
+      "It hands you a sticker that reads: 'I ♥ GOTO' (emotionally harmful, technically vintage)."
     ]
   },
   ai_answer_asm:{
     text:[
-      "NeonNet respects your assembly bias and gives you an ASCII slip: 'fragment: _the_' (nice!)."
-    ],
-    onEnter(){
-      addInventory("ASM Slip", "frag_the");
-      game.fragments["ASM Slip"] = "the_";
-      game.codeFragmentsCollected++;
-      addLog("You found fragment: <span class='frag'>\"the_\"</span>");
-    }
+      "NeonNet respects your assembly bias and grants you a wise nod.",
+      "It still wants you to answer the modern way for this mission though. (Try <span class='frag'>javascript</span>.)"
+    ]
   },
   shelf:{
     text:[
-      "The shelf holds retro hardware: a joystick, a stack of BBS zines, and a vintage dev toolkit box labeled 'Debugger Deluxe'.",
-      "You can <span class='frag'>open debugger</span> or <span class='frag'>read zines</span>."
+      "The shelf holds retro hardware: a joystick, a stack of BBS zines, and a vintage dev toolkit box labeled <span class='frag'>Debugger Deluxe</span>.",
+      "You can <span class='frag'>open debugger</span>, <span class='frag'>read zines</span>, or <span class='frag'>go server</span>."
     ]
   },
   debugger:{
     text:[
-      "Inside the Debugger Deluxe is a slip with a simple crossword clue: 'a synonym for "rescue" (4 letters)'.",
-      "You can answer <span class='frag'>save</span> or <span class='frag'>help</span>."
+      "Inside Debugger Deluxe is a slip with a clue:",
+      "'A synonym for rescue (4 letters)'.",
+      "Answer: <span class='frag'>save</span> or <span class='frag'>help</span>."
     ]
   },
   fill_save:{
     text:[
-      "You fill SAVE. The debugger beeps, and a tiny LED flashes. A hidden compartment opens with a gleaming fragment: 'the_internet'.",
-    ],
-    onEnter(){
-      addInventory("Debugger Fragment", "frag_theinternet");
-      game.fragments["Debugger Fragment"] = "the_internet";
-      game.codeFragmentsCollected++;
-      addLog("You gained fragment: <span class='frag'>\"the_internet\"</span>");
-    }
+      "You fill SAVE. The debugger beeps and a tiny LED flashes.",
+      "A compartment opens... but it's empty. Someone already looted it in 1997.",
+      "Still, the act of SAVE warms the universe by 0.3 degrees of optimism."
+    ]
   },
   fill_help:{
     text:[
-      "You try 'HELP' but the debugger only prints '404: sassy_response_not_found' and nothing happens."
+      "You try 'HELP' but the debugger only prints: '404: sassy_response_not_found'."
     ]
   },
   bbs:{
     text:[
-      "Old BBS zines have marginalia: someone scribbled a piece of a code: 'sudo_' (but it's smudged). You already have that from Binary Decoder. Nice redundancy."
+      "Old BBS zines have marginalia: 'sudo_' (smudged), 'save_the_', and 'internet();'.",
+      "Whoever wrote this had the handwriting of a caffeinated spider."
     ]
   },
   server:{
     text:[
-      "The server room hums. Racks glow like a cathedral of LEDs. On a console is a tiny notepad: 'Patch Assembly Terminal. Enter final code to patch cascade.'",
-      "You can <span class='frag'>use terminal</span> here to enter the code."
+      "The server room hums. Racks glow like a cathedral of LEDs.",
+      "On a console is a notepad: 'Patch Assembly Terminal. <span class='frag'>assemble</span> then <span class='frag'>run patch</span>.'",
+      "You can <span class='frag'>use terminal</span> here."
     ]
   },
   terminal_scene:{
     text:[
-      "The terminal waits. There's a prompt: 'Assemble and RUN to stop cascade.'",
-      "This is it. Type the final code into the terminal to win."
+      "The terminal waits. There's a prompt:",
+      "'Assemble and RUN to stop cascade.'",
+      "Try <span class='frag'>assemble</span> to see your patch, then <span class='frag'>run patch</span>.",
+      "Or manually type the full command if you know it."
     ]
   },
   victory:{
     text:[
-      "You type the code. The terminal glows, NeonNet hums like an 80s synth, and your patch propagates across routers and BBSs.",
-      "The cascade dissipates like static. You saved the internet. The rubber duck applauds. A message appears: 'Thanks, Devon. World saved. Pizza on me.'"
+      "You run the patch. The terminal glows, NeonNet hums like an 80s synth, and your fix propagates across routers and dusty BBSs.",
+      "The cascade dissipates like static. You saved the internet.",
+      "The rubber duck applauds. A message appears: 'Thanks, Devon. World saved. Pizza on me.'"
     ],
     onEnter(){
       addLog("<strong style='color:var(--accent)'>✅ NETWORK STABLE — PATCH APPLIED</strong>");
@@ -250,184 +263,210 @@ const scenes = {
   },
   failure:{
     text:[
-      "The code fizzles. The terminal mocks you with ASCII faces. 'Patch incomplete.'",
-      "It looks like pieces are missing or assembled incorrectly. Check your inventory."
+      "The code fizzles. The terminal mocks you with ASCII faces.",
+      "'Patch incomplete.'",
+      "Type <span class='frag'>assemble</span> to see what's missing, or <span class='frag'>inventory</span>."
     ]
-  },
-  reset:{
-    text:[
-      "Resetting the world..."
-    ],
-    onEnter(){
-      resetGame();
-    }
   }
 };
 
-/* --- Global DOM variables --- */
-let logEl, invEl, termInput, runBtn, termMsg;
+/* ---------------------------
+   DOM
+----------------------------*/
+let logEl, invEl, termInput, runBtn, termMsg, statusEl;
 
 function showScene(key){
   const scene = scenes[key];
-  if(!scene) {
-    addLog(`<div style="color:var(--neon)">That doesn't make sense.</div>`);
-    return;
-  }
+  if(!scene) { addLog(`<div style="color:var(--neon)">That doesn't make sense.</div>`); return; }
   game.currentLocation = key;
   scene.text.forEach(line => addLog(line));
   if(scene.onEnter) scene.onEnter();
   updateInventoryUI();
+  updateStatusUI();
 }
 
-/* --- NEW: The Parser! This is the game's new brain --- */
-function parseCommand(txt) {
-  // --- BUGFIX: Changed color to var(--accent) ---
-  addLog(`<div style="color:var(--accent)">> ${escapeHtml(txt)}</div>`);
-  
-  // --- 1. Check for Win ---
-  if(txt === FINAL_CODE) {
+function parseCommand(raw) {
+  const txt = normalize(raw);
+  if(!txt) return;
+
+  addLog(`<div style="color:var(--accent)">> ${escapeHtml(raw.trim())}</div>`);
+
+  // Win by typing exact final assembled patch (case-insensitive)
+  if (txt === normalize(assembledPatch()) && isPatchComplete()) {
     showScene('victory');
     return;
   }
-  
-  // --- 2. Handle Global Commands (work anywhere) ---
+
+  // Global commands
   switch(txt) {
     case 'help':
-      addLog("--- HELP ---");
-      addLog("Type commands to interact. Try: <ul><li><span class='frag'>look</span> (repeats room description)</li><li><span class='frag'>look [item]</span> (e.g., look desk)</li><li><span class='frag'>open [item]</span> (e.g., open email)</li><li><span class='frag'>go [location]</span> (e.g., go shelf)</li><li><span class='frag'>inventory</span> (or <span class='frag'>i</span>)</li><li><span class='frag'>reset</span> (restarts the game)</li></ul>");
+      addLog("<div style='color:var(--muted)'>Commands:</div>");
+      addLog("<ul style='margin:6px 0 0 18px;color:var(--muted)'>" +
+        "<li><span class='frag'>look</span> (repeats current scene)</li>" +
+        "<li><span class='frag'>look desk</span>, <span class='frag'>go shelf</span>, <span class='frag'>go server</span></li>" +
+        "<li><span class='frag'>open email</span>, <span class='frag'>download attachment</span>, <span class='frag'>reply</span></li>" +
+        "<li><span class='frag'>use floppy</span>, <span class='frag'>talk to duck</span>, <span class='frag'>use ai</span></li>" +
+        "<li><span class='frag'>javascript</span> (answer NeonNet)</li>" +
+        "<li><span class='frag'>inventory</span> (or <span class='frag'>i</span>)</li>" +
+        "<li><span class='frag'>assemble</span> (shows patch)</li>" +
+        "<li><span class='frag'>run patch</span> (attempt to win)</li>" +
+        "<li><span class='frag'>reset</span> (restart)</li>" +
+      "</ul>");
       return;
+
     case 'inventory':
     case 'i':
-      if(game.inventory.length === 0) {
-        addLog("Your inventory is empty.");
-      } else {
-        addLog("You are carrying:");
-        game.inventory.forEach(item => addLog(`- ${item.name}`));
-        addLog("--- Fragments ---");
-        Object.entries(game.fragments).forEach(([k,v])=>{
-          addLog(`<div style="color:var(--muted)">${escapeHtml(k)} → <span class='frag'>${escapeHtml(v)}</span></div>`);
-        });
-      }
+      printInventory();
       return;
+
+    case 'status':
+      updateStatusUI(true);
+      return;
+
     case 'look':
     case 'l':
-      showScene(game.currentLocation);
+      // Don’t re-trigger onEnter rewards; just reprint the scene text
+      scenes[game.currentLocation].text.forEach(line => addLog(line));
       return;
+
+    case 'assemble':
+      addLog("You lay out your fragments on the desk like pixel-art tarot cards:");
+      addLog(`<div style="color:var(--muted)">sudo → <span class='frag'>${escapeHtml(game.fragments.sudo || '(missing)')}</span></div>`);
+      addLog(`<div style="color:var(--muted)">save_the → <span class='frag'>${escapeHtml(game.fragments.save_the || '(missing)')}</span></div>`);
+      addLog(`<div style="color:var(--muted)">internet → <span class='frag'>${escapeHtml(game.fragments.internet || '(missing)')}</span></div>`);
+      addLog(`<div style="margin-top:6px">Assembled patch:</div>`);
+      addLog(`<div><span class='frag'>${escapeHtml(assembledPatch() || '(nothing yet)')}</span></div>`);
+      if(!isPatchComplete()) addLog(`<div style="color:var(--muted)">Missing ${missingFragmentCount()} fragment(s). Keep scavenging.</div>`);
+      return;
+
+    case 'run patch':
+    case 'run':
+      if (game.currentLocation !== 'terminal_scene') {
+        addLog("You wave your hands dramatically, but there's no terminal here. Try <span class='frag'>go server</span> then <span class='frag'>use terminal</span>.");
+        return;
+      }
+      if (!isPatchComplete()) { showScene('failure'); return; }
+      showScene('victory');
+      return;
+
     case 'reset':
       resetGame();
       return;
   }
 
-  // --- 3. Handle Location/Context-Specific Commands ---
+  // Location/context commands
   const loc = game.currentLocation;
-  
+
   switch(txt) {
-    // Start / Desk commands
+    // navigation & basic interactions
     case 'look desk':
     case 'go desk':
-      showScene('desk');
-      break;
+      showScene('desk'); break;
+
     case 'open email':
-      showScene('open_email');
-      break;
-    case 'check slack':
-    case 'use slack':
-      showScene('slack');
-      break;
-    
-    // Email commands
+      showScene('open_email'); break;
+
     case 'download attachment':
     case 'download':
       if (loc === 'open_email') showScene('download_bin');
-      else addLog("You can't do that right now.");
+      else addLog("You don't see an attachment to download here. Try <span class='frag'>open email</span>.");
       break;
+
     case 'reply':
       if (loc === 'open_email') showScene('reply');
-      else addLog("You can't do that right now.");
+      else addLog("Reply to what, the void? Try <span class='frag'>open email</span> first.");
       break;
-      
-    // Desk commands
+
     case 'use floppy':
     case 'insert floppy':
       if (loc === 'desk') showScene('floppy');
-      else addLog("You need to be at your desk.");
+      else addLog("You need to be at your desk. Try <span class='frag'>go desk</span>.");
       break;
+
     case 'talk to duck':
     case 'use duck':
     case 'speak to duck':
       if (loc === 'desk') showScene('duck');
-      else addLog("You need to be at your desk.");
+      else addLog("No duck in your current vicinity. Try <span class='frag'>go desk</span>.");
       break;
-    
-    // AI commands
+
     case 'use ai':
     case 'invoke ai':
       if (loc === 'duck' || loc === 'ai') showScene('ai');
+      else addLog("You don't have a direct line to NeonNet from here. Try <span class='frag'>talk to duck</span>.");
       break;
-    case 'answer javascript':
+
     case 'javascript':
+    case 'answer javascript':
       if (loc === 'ai') showScene('ai_answer_js');
-      else addLog("Now is not the time for JavaScript.");
+      else addLog("JavaScript echoes faintly in the distance. Find NeonNet first: <span class='frag'>use ai</span>.");
       break;
-    case 'answer basic':
+
     case 'basic':
+    case 'answer basic':
       if (loc === 'ai') showScene('ai_answer_basic');
-      else addLog("Now is not the time for BASIC.");
+      else addLog("BASIC is having a nice retirement. This isn't the moment.");
       break;
-    case 'answer assembly':
+
     case 'assembly':
+    case 'answer assembly':
       if (loc === 'ai') showScene('ai_answer_asm');
-      else addLog("Now is not the time for Assembly.");
+      else addLog("Assembly is always the moment, but also: not right now.");
       break;
-      
-    // Shelf commands
+
     case 'go shelf':
     case 'look shelf':
     case 'check shelf':
-      showScene('shelf');
-      break;
+      showScene('shelf'); break;
+
     case 'open debugger':
     case 'use debugger':
       if (loc === 'shelf') showScene('debugger');
+      else addLog("You don't see Debugger Deluxe here. Try <span class='frag'>go shelf</span>.");
       break;
+
     case 'read zines':
     case 'read bbs zines':
       if (loc === 'shelf') showScene('bbs');
+      else addLog("No zines here. Try <span class='frag'>go shelf</span>.");
       break;
-      
-    // Debugger commands
-    case 'answer save':
+
     case 'save':
+    case 'answer save':
       if (loc === 'debugger') showScene('fill_save');
+      else addLog("Save what? (Try it inside the debugger.)");
       break;
+
+    case 'help':
     case 'answer help':
       if (loc === 'debugger') showScene('fill_help');
+      else addLog("Type <span class='frag'>help</span> for commands.");
       break;
-      
-    // Server room
+
     case 'go server':
     case 'go server room':
     case 'check server room':
-      showScene('server');
-      break;
+      showScene('server'); break;
+
     case 'use terminal':
     case 'open terminal':
       if (loc === 'server') showScene('terminal_scene');
-      else addLog("You must be in the server room to use that terminal.");
+      else addLog("You must be in the server room. Try <span class='frag'>go server</span>.");
       break;
 
-    // --- 4. Handle Failure ---
     default:
-      // Check for the "final code" fail state
-      if (txt.includes('sudo')) {
-        showScene('failure');
+      // A gentle nudge if they try to paste partial patch
+      if (txt.includes('sudo') || txt.includes('internet')) {
+        addLog("That looks patch-adjacent. Try <span class='frag'>assemble</span>, then <span class='frag'>run patch</span> (in the server terminal).");
       } else {
-        addLog(`I don't understand the command "<span class='frag'>${escapeHtml(txt)}</span>". Type 'help' for commands.`);
+        addLog(`I don't understand "<span class='frag'>${escapeHtml(raw.trim())}</span>". Type <span class='frag'>help</span>.`);
       }
   }
 }
 
-/* --- Helper functions --- */
+/* ---------------------------
+   Helpers
+----------------------------*/
 function addLog(text){
   const p = document.createElement('div');
   p.innerHTML = text;
@@ -451,41 +490,94 @@ function updateInventoryUI(){
     const div = document.createElement('div');
     div.className = 'item';
     div.innerHTML = `<div class="icon">⚙</div><div style="flex:1">
-      <strong style="color:var(--accent)">${i.name}</strong>
-      <div style="font-size:12px;color:var(--muted)">${game.fragments[i.name] ? 'Fragment: ' + "<span class='frag'>"+escapeHtml(game.fragments[i.name])+"</span>" : ''}</div>
+      <strong style="color:var(--accent)">${escapeHtml(i.name)}</strong>
+      <div style="font-size:12px;color:var(--muted)">${fragmentForTool(i.name)}</div>
     </div>`;
     invEl.appendChild(div);
   });
 }
 
+function fragmentForTool(toolName){
+  // Map tools to their fragment key for display
+  const map = {
+    "Binary Decoder":"sudo",
+    "Floppy Patch":"save_the",
+    "NeonNet Token":"internet"
+  };
+  const k = map[toolName];
+  if(!k) return "";
+  const v = game.fragments[k];
+  return v ? `Fragment: <span class='frag'>${escapeHtml(v)}</span>` : "";
+}
+
+function printInventory(){
+  if(game.inventory.length === 0) {
+    addLog("Your inventory is empty. The void applauds politely.");
+    return;
+  }
+  addLog("You are carrying:");
+  game.inventory.forEach(item => addLog(`- ${escapeHtml(item.name)}`));
+  addLog("--- Fragments ---");
+  REQUIRED_FRAG_KEYS.forEach(k=>{
+    addLog(`<div style="color:var(--muted)">${escapeHtml(k)} → <span class='frag'>${escapeHtml(game.fragments[k] || '(missing)')}</span></div>`);
+  });
+}
+
+function updateStatusUI(printToLog=false){
+  const have = REQUIRED_FRAG_KEYS.filter(k=>!!game.fragments[k]).length;
+  statusEl.textContent = `Fragments: ${have}/${REQUIRED_FRAG_KEYS.length}`;
+  if(printToLog){
+    addLog(`<div style="color:var(--muted)">Status: ${have}/${REQUIRED_FRAG_KEYS.length} fragments collected.</div>`);
+  }
+}
+
+function isPatchComplete(){
+  return REQUIRED_FRAG_KEYS.every(k => typeof game.fragments[k] === 'string' && game.fragments[k].length > 0);
+}
+function missingFragmentCount(){
+  return REQUIRED_FRAG_KEYS.filter(k=>!game.fragments[k]).length;
+}
+
 function runTerminal(){
-  const txt = termInput.value.trim().toLowerCase();
+  const raw = termInput.value;
+  const txt = raw.trim();
   if(!txt) return;
-  
-  termInput.value = ''; // Clear input
-  termMsg.innerText = ''; // Clear hints
-  
+
+  termInput.value = '';
+  termMsg.innerText = '';
   parseCommand(txt);
 }
 
-function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function grantOnce(flag, fn){
+  if(game.obtainedFlags[flag]) return;
+  game.obtainedFlags[flag] = true;
+  fn();
+}
 
 function resetGame(){
   game.currentLocation = 'start';
   game.inventory = [];
   game.fragments = {};
-  game.codeFragmentsCollected = 0;
+  game.obtainedFlags = {};
+  game.konamiProgress = 0;
+
   logEl.innerHTML = '';
   termInput.value = '';
   termMsg.innerText = '';
+
   showScene('start');
+  updateStatusUI();
 }
 
 function handleKonamiKey(e){
   if(e.key === konami[game.konamiProgress]) {
     game.konamiProgress++;
     if(game.konamiProgress === konami.length){
-      addLog("<div style='color:var(--neon)'>✨ KONAMI EASTER EGG: You've unlocked 'Turbo Floppy Mode' — play faster, wear neon leg warmers.</div>");
+      addLog("<div style='color:var(--neon)'>✨ KONAMI EASTER EGG: Turbo Floppy Mode engaged. Your typing speed increases by 12% (purely emotional).</div>");
       game.konamiProgress = 0;
     }
   } else {
@@ -493,32 +585,35 @@ function handleKonamiKey(e){
   }
 }
 
-/* --- Main Game Start --- */
+/* ---------------------------
+   Boot
+----------------------------*/
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Find all elements
   logEl = document.getElementById('log');
   invEl = document.getElementById('inventory');
   termInput = document.getElementById('terminalInput');
   runBtn = document.getElementById('runBtn');
   termMsg = document.getElementById('termMsg');
+  statusEl = document.getElementById('status');
 
-  // 2. Attach listeners
   runBtn.addEventListener('click', runTerminal);
   termInput.addEventListener('keydown', (e)=> {
     if(e.key==='Enter') runTerminal();
     handleKonamiKey(e);
   });
-  
+
   termInput.addEventListener('input', ()=>{
-    const v = termInput.value;
-    if(FINAL_CODE.startsWith(v)) termMsg.innerText = "Looks promising...";
-    else if(v.length>0) termMsg.innerText = "";
+    const v = termInput.value.trim();
+    const patch = assembledPatch();
+    if(!v) { termMsg.innerText = ""; return; }
+    if(isPatchComplete() && normalize(patch).startsWith(normalize(v))) termMsg.innerText = "Looks promising...";
+    else if(normalize('assemble').startsWith(normalize(v))) termMsg.innerText = "Try assembling the patch…";
+    else if(normalize('run patch').startsWith(normalize(v))) termMsg.innerText = "Server room vibes…";
+    else termMsg.innerText = "";
   });
 
-  // 3. Start the game
   resetGame();
 });
-
 </script>
 </body>
 </html>
